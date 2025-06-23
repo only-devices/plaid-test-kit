@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaid Test Kit</title>
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="header">
+        <img src="assets/plaid-bw.png" width="240" alt="Plaid logo" />
+        <p>Welcome to the Test Kit!</p>
+    </div>
+
+    <div class="card">
+        <h2>Choose Your Link Experience</h2>
+        <p>Select how you'd like to test Plaid Link. OAuth support is automatic based on the institution you select.</p>
+        
+        <div class="grid grid-3">
+            <div class="feature-card" onclick="startStandardLink()">
+                <h3>🔗 Standard Link</h3>
+                <p>Classic Link experience. Works with all institutions and OAuth flows.</p>
+                <button class="btn btn-primary btn-full">Start Standard Link</button>
+            </div>
+            
+            <div class="feature-card" onclick="startEmbeddedLink()">
+                <h3>📱 Embedded Link</h3>
+                <p>Modern experience with seamless integration.</p>
+                <button class="btn btn-primary btn-full">Start Embedded Link</button>
+            </div>
+            
+            <div class="feature-card" onclick="showUpdateMode()">
+                <h3>🔄 Link Update Mode</h3>
+                <p>Add additional accounts to an existing connection using update mode.</p>
+                <button class="btn btn-secondary btn-full">Configure Update Mode</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Direct Token Input Section -->
+    <div class="card">
+        <h2>Or Use an Existing Access Token</h2>
+        
+        <div class="grid grid-2">
+            <div>
+                <div class="form-group">
+                    <p>If you already have an access token, you can set it directly and skip the Link process.</p>
+                    <label for="directAccessToken">Access Token:</label>
+                    <input type="text" id="directAccessToken" placeholder="access-..." class="form-control">
+                </div>
+            </div>
+            <div style="display: flex; align-items: flex-end; padding: 22px;">
+                <button class="btn btn-success btn-full" onclick="setDirectAccessToken()">Set Access Token</button>
+            </div>
+        </div>
+        
+        <div id="directTokenStatus"></div>
+    </div>
+
+    <!-- App Modules Section -->
+    <div class="card">
+        <h2>Testing Modules</h2>
+        <p>Direct access to different Plaid API testing modules. Each module can use an existing access token or guide you through Link.</p>
+        
+        <div class="grid grid-3">
+            <div class="feature-card" onclick="window.location.href='/identity-tester.html'">
+                <h3>🆔 Identity APIs</h3>
+                <p>Test Identity /get and /match endpoints with comprehensive data comparison and scoring.</p>
+                <button class="btn btn-primary btn-full">Open Identity Tester</button>
+            </div>
+            
+            <!-- Placeholder for future modules -->
+            <div class="feature-card" style="opacity: 0.6; cursor: not-allowed;">
+                <h3>💰 Assets APIs</h3>
+                <p>Test Assets endpoints for income verification and asset reporting. (Coming soon)</p>
+                <button class="btn btn-secondary btn-full" disabled>Coming Soon</button>
+            </div>
+            
+            <div class="feature-card" style="opacity: 0.6; cursor: not-allowed;">
+                <h3>📊 Transactions APIs</h3>
+                <p>Test Transactions endpoints for account history and categorization. (Coming soon)</p>
+                <button class="btn btn-secondary btn-full" disabled>Coming Soon</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Mode Configuration -->
+    <div id="updateModeCard" class="card hidden">
+        <h3>Link Update Mode Configuration</h3>
+        <p>Enter an existing access token to enable account selection for additional accounts.</p>
+        
+        <div class="form-group">
+            <label for="updateAccessToken">Access Token:</label>
+            <input type="text" id="updateAccessToken" placeholder="access-xxx..." class="form-control">
+        </div>
+        
+        <div class="grid grid-2">
+            <button class="btn btn-outline" onclick="hideUpdateMode()">Cancel</button>
+            <button class="btn btn-success" onclick="startUpdateMode()">Start Update Mode</button>
+        </div>
+        
+        <div id="updateStatus"></div>
+    </div>
+
+    <!-- Link Container for Embedded Mode -->
+    <div id="embeddedContainer" class="card hidden">
+        <h3>Embedded Link</h3>
+        <div id="linkContainer" class="link-container">
+            <div class="link-container-placeholder">
+                <p><strong>Embedded Link will appear here</strong></p>
+                <p>Click "Start Embedded Link" above to begin</p>
+            </div>
+        </div>
+        <div id="embeddedStatus"></div>
+    </div>
+
+    <!-- Success Section -->
+    <div id="successSection" class="card hidden">
+        <h3>✅ Bank Connected Successfully!</h3>
+        <div id="connectionInfo"></div>
+        
+        <div class="grid grid-2 mt-2">
+            <div>
+                <h4>Access Token</h4>
+                <div id="tokenDisplay" class="code-display"></div>
+                <button class="btn btn-outline mt-1" onclick="copyAccessToken()">Copy Token</button>
+            </div>
+            
+            <div>
+                <h4>Next Steps</h4>
+                <p>Your bank account is now connected. You can:</p>
+                <div class="grid">
+                    <a href="/identity-tester.html" class="btn btn-primary">Test Identity APIs</a>
+                    <button class="btn btn-outline" onclick="startOver()">Start Over</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Display -->
+    <div id="globalStatus"></div>
+
+    <!-- Load JavaScript modules -->
+    <script src="/js/api-client.js"></script>
+    <script src="/js/plaid-link.js"></script>
+    <script src="/js/ui-utils.js"></script>
+    <script src="/js/start-page.js"></script>
+</body>
+</html>
