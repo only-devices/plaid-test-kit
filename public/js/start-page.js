@@ -4,12 +4,14 @@ class StartPage {
     constructor() {
         this.currentAccessToken = null;
         this.currentMode = null;
+        this.customConfig = null;
         this.init();
     }
 
     init() {
-        // Check if we have an existing token
+        // Check if we have an existing token and configuration
         this.checkExistingToken();
+        this.checkCustomConfiguration();
     }
 
     async checkExistingToken() {
@@ -21,6 +23,22 @@ class StartPage {
             }
         } catch (error) {
             console.log('Health check failed:', error);
+        }
+    }
+
+    async checkCustomConfiguration() {
+        try {
+            const health = await window.apiClient.getHealth();
+            if (health.has_custom_link_config && health.custom_link_config) {
+                this.customConfig = health.custom_link_config;
+                this.showConfigurationBanner();
+                this.updateConfigStatus();
+            } else {
+                this.updateConfigStatus();
+            }
+        } catch (error) {
+            console.log('Config check failed:', error);
+            this.updateConfigStatus();
         }
     }
 
@@ -51,6 +69,40 @@ class StartPage {
                 </div>
             </div>
         `;
+    }
+
+    showConfigurationBanner() {
+        const banner = document.getElementById('configBanner');
+        if (banner && this.customConfig) {
+            banner.classList.remove('hidden');
+            
+            // Update summary
+            const summary = document.getElementById('configSummary');
+            const productCount = this.customConfig.products ? this.customConfig.products.length : 0;
+            const countryCount = this.customConfig.country_codes ? this.customConfig.country_codes.length : 0;
+            
+            summary.textContent = `Using ${productCount} product(s) and ${countryCount} country code(s)`;
+        }
+    }
+
+    updateConfigStatus() {
+        const statusEl = document.getElementById('configStatus');
+        if (!statusEl) return;
+
+        if (this.customConfig) {
+            const productsList = this.customConfig.products ? this.customConfig.products.join(', ') : 'none';
+            const countriesList = this.customConfig.country_codes ? this.customConfig.country_codes.join(', ') : 'none';
+            
+            statusEl.innerHTML = `
+                <div style="padding: 12px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 8px; border-left: 3px solid #10b981;">
+                    <div style="font-size: 13px; color: #047857;">
+                        <div><strong>Products:</strong> ${productsList}</div>
+                        <div><strong>Countries:</strong> ${countriesList}</div>
+                        <div><strong>Client:</strong> ${this.customConfig.client_name || 'Plaid Test Kit'}</div>
+                    </div>
+                </div>
+            `;;
+        }
     }
 
     async copyExistingToken() {
@@ -107,9 +159,10 @@ class StartPage {
             this.currentMode = 'standard';
             UIUtils.showStatus('globalStatus', 'Creating Link token...', 'info');
 
-            // Create link token
+            // Create link token with custom config
             const tokenResponse = await window.plaidLinkManager.createLinkToken({
-                mode: 'standard'
+                mode: 'standard',
+                custom_config: this.customConfig
             });
 
             if (!tokenResponse.success) {
@@ -147,9 +200,10 @@ class StartPage {
 
             UIUtils.showStatus('embeddedStatus', 'Creating Link token...', 'info');
 
-            // Create link token
+            // Create link token with custom config
             const tokenResponse = await window.plaidLinkManager.createLinkToken({
-                mode: 'embedded'
+                mode: 'embedded',
+                custom_config: this.customConfig
             });
 
             if (!tokenResponse.success) {
@@ -252,10 +306,11 @@ class StartPage {
             this.currentMode = 'update';
             UIUtils.showStatus('updateStatus', 'Creating Link token for update mode...', 'info');
 
-            // Create link token for update mode
+            // Create link token for update mode with custom config
             const tokenResponse = await window.plaidLinkManager.createLinkToken({
                 mode: 'update',
-                accessToken: accessToken
+                accessToken: accessToken,
+                custom_config: this.customConfig
             });
 
             if (!tokenResponse.success) {
@@ -276,6 +331,118 @@ class StartPage {
 
         } catch (error) {
             UIUtils.showStatus('updateStatus', `Failed to start Update Mode: ${error.message}`, 'error');
+        }
+    }
+
+    async setDirectAccessToken() {
+        const accessToken = document.getElementById('directAccessToken').value.trim();
+        
+        if (!accessToken) {
+            UIUtils.showStatus('directTokenStatus', 'Please enter an access token', 'error');
+            return;
+        }
+
+        try {
+            UIUtils.setButtonLoading(event.target, true, 'Validating...');
+            
+            const response = await window.apiClient.setAccessToken(accessToken);
+            
+            if (response.success) {
+                this.currentAccessToken = accessToken;
+                UIUtils.showStatus('directTokenStatus', 'Access token set successfully! You can now test APIs or start over.', 'success');
+                
+                // Show success section
+                this.showSuccessSection({ institution: { name: 'Direct Token' } }, 'Direct');
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            UIUtils.showStatus('directTokenStatus', `Error: ${error.message}`, 'error');
+        } finally {
+            UIUtils.setButtonLoading(event.target, false);
+        }
+    }
+
+    // Configuration management functions
+    async viewConfiguration() {
+        window.location.href = '/link-config.html';
+    }
+
+    async clearConfiguration() {
+        try {
+            await window.apiClient.request('/api/clear-link-config', {
+                method: 'POST'
+            });
+            
+            this.customConfig = null;
+            
+            // Hide banner
+            const banner = document.getElementById('configBanner');
+            if (banner) {
+                banner.classList.add('hidden');
+            }
+            
+            // Update status
+            this.updateConfigStatus();
+            
+            UIUtils.showNotification('Configuration cleared - using defaults', 'success');
+        } catch (error) {
+            UIUtils.showNotification(`Failed to clear configuration: ${error.message}`, 'error');
+        }
+    }
+
+    async loadPresetConfig(presetType) {
+        const presets = {
+            'identity': {
+                products: ['identity'],
+                client_name: 'Plaid Test Kit - Identity Only',
+                country_codes: ['US'],
+                language: 'en'
+            },
+            'transactions': {
+                products: ['transactions'],
+                client_name: 'Plaid Test Kit - Transactions',
+                country_codes: ['US'],
+                language: 'en'
+            },
+            'auth': {
+                products: ['auth'],
+                client_name: 'Plaid Test Kit - Auth',
+                country_codes: ['US'],
+                language: 'en'
+            },
+            'multi-product': {
+                products: ['transactions', 'identity', 'auth'],
+                client_name: 'Plaid Test Kit - Multi Product',
+                country_codes: ['US'],
+                language: 'en'
+            }
+        };
+
+        const config = presets[presetType];
+        if (!config) {
+            UIUtils.showNotification(`Preset "${presetType}" not found`, 'error');
+            return;
+        }
+
+        try {
+            const response = await window.apiClient.request('/api/set-link-config', {
+                method: 'POST',
+                body: JSON.stringify({ config })
+            });
+            
+            if (response.success) {
+                this.customConfig = config;
+                this.showConfigurationBanner();
+                this.updateConfigStatus();
+                UIUtils.showNotification(`Loaded "${presetType}" configuration`, 'success');
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            UIUtils.showNotification(`Failed to load preset: ${error.message}`, 'error');
+        } finally {
+            UIUtils.setButtonLoading(event.target, false);
         }
     }
 
@@ -406,6 +573,8 @@ class StartPage {
         
         // Update connection info
         const connectionInfo = document.getElementById('connectionInfo');
+        const configUsed = this.customConfig ? 'Custom' : 'Default';
+        
         connectionInfo.innerHTML = `
             <div class="grid grid-2">
                 <div>
@@ -418,7 +587,13 @@ class StartPage {
                     <strong>Link Mode:</strong> ${this.currentMode}
                 </div>
                 <div>
+                    <strong>Configuration:</strong> ${configUsed}
+                </div>
+                <div>
                     <strong>Accounts:</strong> ${metadata.accounts?.length || 0} connected
+                </div>
+                <div>
+                    <strong>Products:</strong> ${this.customConfig?.products?.join(', ') || 'identity'}
                 </div>
             </div>
         `;
@@ -462,6 +637,7 @@ class StartPage {
         
         // Reset form
         document.getElementById('updateAccessToken').value = '';
+        document.getElementById('directAccessToken').value = '';
         
         // Reset embedded container
         const container = document.getElementById('linkContainer');
@@ -524,6 +700,18 @@ function setDirectAccessToken() {
 
 function startOver() {
     window.startPage.startOver();
+}
+
+function viewConfiguration() {
+    window.startPage.viewConfiguration();
+}
+
+function clearConfiguration() {
+    window.startPage.clearConfiguration();
+}
+
+function loadPresetConfig(presetType) {
+    window.startPage.loadPresetConfig(presetType);
 }
 
 // Initialize when DOM is ready

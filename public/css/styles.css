@@ -536,3 +536,45 @@ textarea:focus {
         font-size: 16px;
     }
 }
+
+.terminal {
+  background-color: #000; /* classic black */
+  color: #fff;            /* default text white */
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  padding: 1em;
+  border-radius: 5px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;  /* preserve formatting, wrap if needed */
+  font-size: 14px;
+}
+
+/* JSON coloring */
+.terminal .key {
+  color: #56b6c2; /* cyan-ish */
+}
+
+.terminal .string {
+  color: #98c379; /* green */
+}
+
+.terminal .number {
+  color: #d19a66; /* orange */
+}
+
+.terminal .boolean {
+  color: #e06c75; /* red-ish */
+}
+
+.terminal .null {
+  color: #c678dd; /* purple */
+}
+
+/* VERY IMPORTANT: Emoji styles */
+.jumbo-emoji {
+  font-size: 3rem;
+  line-height: 1;
+  display: inline-block;
+  vertical-align: middle;
+  margin-bottom: 10px;
+}

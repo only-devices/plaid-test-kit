@@ -142,15 +142,21 @@ class PlaidLinkManager {
     }
 
     /**
-     * Create link token with proper configuration
+     * Create link token with custom configuration support
      * @param {Object} options - Token creation options
      * @param {string} options.mode - 'standard', 'embedded', or 'update'
      * @param {string} options.accessToken - Required for update mode
+     * @param {Object} options.custom_config - Custom Link token configuration
      */
     async createLinkToken(options = {}) {
-        const { mode = 'standard', accessToken } = options;
+        const { mode = 'standard', accessToken, custom_config } = options;
         
         const tokenRequest = {};
+        
+        // Include custom configuration if provided
+        if (custom_config) {
+            tokenRequest.custom_config = custom_config;
+        }
         
         // For update mode, include access token and account selection
         if (mode === 'update') {
@@ -160,6 +166,8 @@ class PlaidLinkManager {
             tokenRequest.access_token = accessToken;
             tokenRequest.update_mode = true;
         }
+        
+        console.log('Creating link token with request:', tokenRequest);
         
         return await window.apiClient.createLinkToken(tokenRequest);
     }

@@ -169,7 +169,7 @@ class UIUtils {
         }
 
         // Phone validation (basic)
-        if (values.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(values.phone.replace(/\s/g, ''))) {
+        if (values.phone && !/^[\+]? [1-9][\d]{0,15}$/.test(values.phone.replace(/\s/g, ''))) {
             errors.push('Invalid phone format');
         }
 
@@ -222,6 +222,37 @@ class UIUtils {
             console.error('Failed to copy text:', err);
             return false;
         }
+    }
+
+    /**
+     * Syntax highlight JSON for HTML display
+     * @param {Object|string} json - JSON object or JSON string
+     * @returns {string} HTML string containing syntax highlighted JSON
+     */
+    static syntaxHighlight(json) {
+        // Ensure we have a string representation of the JSON
+        if (typeof json !== 'string') {
+            json = JSON.stringify(json, null, 2);
+        }
+
+        // Escape HTML special characters
+        json = json
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+        // Replace tokens with span-wrapped versions for coloring
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g, match => {
+            let cls = 'number';
+            if (/^"/.test(match)) {
+                cls = /:$/.test(match) ? 'key' : 'string';
+            } else if (/true|false/.test(match)) {
+                cls = 'boolean';
+            } else if (/null/.test(match)) {
+                cls = 'null';
+            }
+            return `<span class="${cls}">${match}</span>`;
+        });
     }
 
     /**

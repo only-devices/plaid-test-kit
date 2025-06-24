@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaid Test Kit - Auth APIs</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Auth API Tester</h1>
+        <p>Test Auth /get endpoint and microdeposit verification with connected accounts</p>
+        <nav class="nav">
+            <a href="/" class="nav-link">← Back to Link</a>
+        </nav>
+    </div>
+
+    <!-- Access Token Section -->
+    <div class="card">
+        <h3>Access Token</h3>
+        <div class="grid grid-2">
+            <div>
+                <div class="form-group">
+                    <label for="accessTokenInput">Access Token:</label>
+                    <input type="text" id="accessTokenInput" placeholder="Enter access token or connect via Link">
+                </div>
+                <button class="btn btn-primary" onclick="setAccessToken()">Set Token</button>
+                <span class="jumbo-emoji"> 👉 </span>
+                <button class="btn btn-outline" onclick="loadAccounts()">Load Accounts</button>
+            </div>
+            <div>
+                <div id="tokenStatus"></div>
+                <div id="currentTokenDisplay" class="code-display hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Testing Interface -->
+    <div class="grid grid-2">
+        <!-- Controls Column -->
+        <div class="card">
+            <h3>Auth Testing Controls</h3>
+            
+            <div class="form-group">
+                <label for="accountSelect">Select Account:</label>
+                <select id="accountSelect" name="account_index">
+                    <option value="">Load accounts first...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <button class="btn btn-primary btn-full" onclick="testAuthGet()">Get Account & Routing Numbers</button>
+            </div>
+
+            <h3>Raw API Response</h3>
+            <div class="config-preview">
+                <pre id="rawResponse" class="terminal" style="max-height: 400px; overflow-y: auto;">// API response will appear here after testing</pre>
+            </div>
+            <button class="btn btn-outline mt-1" onclick="copyRawResponse()" style="margin-top: 8px;">Copy Response</button>
+
+            <div class="form-group">
+                <h4>ACH Information</h4>
+                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 13px; color: #475569;">
+                    <p style="margin: 0 0 8px 0;"><strong>Important:</strong> Auth data is used for ACH transfers.</p>
+                    <p style="margin: 0;"><strong>Security:</strong> Never log or display account numbers in production.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Column -->
+        <div class="card">
+            <h3>Auth /get Output</h3>
+            
+            <div class="form-group">
+                <label>Account ID:</label>
+                <div class="result-field" id="accountId" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">Click "Get Account & Routing Numbers" to retrieve
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Account Name:</label>
+                <div class="result-field" id="accountName" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">-</div>
+            </div>
+            
+            <div class="form-group">
+                <label>Account Mask:</label>
+                <div class="result-field" id="accountMask" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">-</div>
+            </div>
+            
+            <div class="form-group">
+                <label>Account Number:</label>
+                <div class="result-field" id="accountNumber" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">-</div>
+            </div>
+            
+            <div class="form-group">
+                <label>Routing Number:</label>
+                <div class="result-field" id="routingNumber" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">-</div>
+            </div>
+
+            <div class="form-group">
+                <label>Wire Routing Number:</label>
+                <div class="result-field" id="wireRoutingNumber" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">-</div>
+            </div>
+            
+            <div class="form-group">
+                <label>Account Type:</label>
+                <div class="result-field" id="accountType">-</div>
+            </div>
+            
+            <div class="form-group">
+                <label>Account Subtype:</label>
+                <div class="result-field" id="accountSubtype">-</div>
+            </div>
+
+            <div class="form-group">
+                <label>Available Balance:</label>
+                <div class="result-field" id="availableBalance">-</div>
+            </div>
+
+            <div class="form-group">
+                <label>Current Balance:</label>
+                <div class="result-field" id="currentBalance">-</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status Display -->
+    <div id="apiStatus"></div>
+
+    <!-- Load JavaScript modules -->
+    <script src="/js/api-client.js"></script>
+    <script src="/js/ui-utils.js"></script>
+    <script src="/js/auth-tester.js"></script>
+</body>
+</html>

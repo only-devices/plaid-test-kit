@@ -9,8 +9,57 @@
 </head>
 <body>
     <div class="header">
-        <img src="assets/plaid-bw.png" width="240" alt="Plaid logo" />
+        <img src="assets/plaid-bw.png" width="180" alt="Plaid logo" />
         <p>Welcome to the Test Kit!</p>
+    </div>
+
+    <!-- Link Configuration Banner -->
+    <div id="configBanner" class="card hidden" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #6366f1;">
+        <div class="grid grid-2">
+            <div>
+                <h4 style="margin: 0; color: #1e40af;">Custom Link Configuration Active</h4>
+                <p style="margin: 5px 0 0 0; color: #1e40af;" id="configSummary">Custom settings are being used for Link token creation.</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end;">
+                <button class="btn btn-outline" onclick="viewConfiguration()">View Config</button>
+                <button class="btn btn-secondary" onclick="clearConfiguration()">Clear Config</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link Configuration Section -->
+    <div class="card">
+        <h2>Link Configuration</h2>
+        <p>Customize your Link token creation with advanced configuration options including products, country codes, and advanced parameters.</p>
+        
+        <div class="grid grid-2">
+            <div class="feature-card" onclick="window.location.href='/link-config.html'">
+                <h3>⚙️ Configure Link Token</h3>
+                <p>Customize products, country codes, and advanced Link token parameters.</p>
+                <button class="btn btn-primary btn-full">Open Configurator</button>
+            </div>
+            
+            <div style="padding: 24px;">
+                <h4>Current Configuration</h4>
+                <div id="configStatus" style="margin: 16px 0;">
+                    <div style="padding: 12px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 8px; border-left: 3px solid #10b981;">
+                        <div style="font-size: 13px; color: #047857;">
+                            <div><strong>Products:</strong> auth</div>
+                            <div><strong>Countries:</strong> US</div>
+                            <div><strong>Client:</strong> Plaid Test Kit - Auth</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h4>Quick Configs</h4>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn btn-outline btn-small" onclick="loadPresetConfig('auth')" style="padding: 8px 16px; font-size: 14px;">Auth</button>
+                    <button class="btn btn-outline btn-small" onclick="loadPresetConfig('transactions')" style="padding: 8px 16px; font-size: 14px;">Transactions</button>
+                    <button class="btn btn-outline btn-small" onclick="loadPresetConfig('identity')" style="padding: 8px 16px; font-size: 14px;">Identity</button>
+                    <button class="btn btn-outline btn-small" onclick="loadPresetConfig('ABI')" style="padding: 8px 16px; font-size: 14px;">ABI</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="card">
@@ -70,11 +119,10 @@
                 <button class="btn btn-primary btn-full">Open Identity Tester</button>
             </div>
             
-            <!-- Placeholder for future modules -->
-            <div class="feature-card" style="opacity: 0.6; cursor: not-allowed;">
-                <h3>💰 Assets APIs</h3>
-                <p>Test Assets endpoints for income verification and asset reporting. (Coming soon)</p>
-                <button class="btn btn-secondary btn-full" disabled>Coming Soon</button>
+            <div class="feature-card" onclick="window.location.href='/auth-tester.html'">
+                <h3>🏦 Auth APIs</h3>
+                <p>Test Auth /get endpoint for account & routing numbers, plus microdeposit verification.</p>
+                <button class="btn btn-primary btn-full">Open Auth Tester</button>
             </div>
             
             <div class="feature-card" style="opacity: 0.6; cursor: not-allowed;">
@@ -128,10 +176,8 @@
             </div>
             
             <div>
-                <h4>Next Steps</h4>
-                <p>Your bank account is now connected. You can:</p>
+                <p>Your bank account is now connected.</p>
                 <div class="grid">
-                    <a href="/identity-tester.html" class="btn btn-primary">Test Identity APIs</a>
                     <button class="btn btn-outline" onclick="startOver()">Start Over</button>
                 </div>
             </div>

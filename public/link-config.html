@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaid Test Kit - Link Token Configuration</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        /* Enhanced styling for configuration interface */
+        .config-section {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .config-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .config-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .toggle-switch.active {
+            background: #6366f1;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
+
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .products-table th,
+        .products-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .products-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #475569;
+        }
+
+        .products-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .product-checkbox {
+            width: 18px;
+            height: 18px;
+            accent-color: #6366f1;
+            cursor: pointer;
+        }
+
+        .product-name {
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        .product-description {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .json-editor {
+            width: 100%;
+            min-height: 200px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        .json-editor:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .json-status {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .json-valid {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .json-invalid {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .config-preview {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group-inline {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .form-group-inline label {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .select-small {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .disabled-section {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        .section-description {
+            color: #64748b;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Link Token Configuration</h1>
+        <p>Customize your Plaid Link experience with advanced configuration options</p>
+        <nav class="nav">
+            <a href="/" class="nav-link">← Back to Main</a>
+        </nav>
+    </div>
+
+    <!-- Products Configuration -->
+    <div class="config-section">
+        <div class="config-header">
+            <div>
+                <h3 style="margin: 0; color: #1e293b;">Products Configuration</h3>
+                <p class="section-description" style="margin: 4px 0 0 0;">Select which Plaid products to include in your Link token. Products marked as required will always be requested, while optional products may be skipped if not supported.</p>
+            </div>
+        </div>
+
+        <table class="products-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th style="text-align: center; width: 100px;">Include</th>
+                    <th style="text-align: center; width: 100px;">Optional</th>
+                    <th style="text-align: center; width: 140px;">Required if Supported</th>
+                </tr>
+            </thead>
+            <tbody id="productsTableBody">
+                <!-- Products will be populated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Basic Configuration -->
+    <div class="config-section">
+        <div class="config-header">
+            <div>
+                <h3 style="margin: 0; color: #1e293b;">Basic Configuration</h3>
+                <p class="section-description" style="margin: 4px 0 0 0;">Configure basic Link token parameters like country codes, language, and client information.</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Client Name</label>
+                <input type="text" id="clientName" value="Plaid Test Kit" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">The name of your application as it will be displayed to users</div>
+            </div>
+            <div class="form-group">
+                <label>Language</label>
+                <select id="language" class="select-small" style="width: 100%; padding: 12px;">
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="nl">Dutch</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Country Codes</label>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px;">
+                <label class="form-group-inline" style="margin: 0;">
+                    <input type="checkbox" class="country-checkbox" value="US" checked> United States
+                </label>
+                <label class="form-group-inline" style="margin: 0;">
+                    <input type="checkbox" class="country-checkbox" value="CA"> Canada
+                </label>
+                <label class="form-group-inline" style="margin: 0;">
+                    <input type="checkbox" class="country-checkbox" value="GB"> United Kingdom
+                </label>
+                <label class="form-group-inline" style="margin: 0;">
+                    <input type="checkbox" class="country-checkbox" value="FR"> France
+                </label>
+                <label class="form-group-inline" style="margin: 0;">
+                    <input type="checkbox" class="country-checkbox" value="ES"> Spain
+                </label>
+                <label class="form-group-inline" style="margin: 0;">
+                    <input type="checkbox" class="country-checkbox" value="NL"> Netherlands
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Preview -->
+    <div class="config-section">
+        <div class="config-header">
+            <h3 style="margin: 0; color: #1e293b;">Configuration Preview</h3>
+        </div>
+        <div class="config-preview">
+            <pre id="configPreview" class="terminal">// Configuration will appear here</pre>
+        </div>
+    </div>
+
+    <!-- Advanced JSON Configuration -->
+    <div class="config-section">
+        <div class="config-header">
+            <div>
+                <h3 style="margin: 0; color: #1e293b;">Advanced Configuration</h3>
+                <p class="section-description" style="margin: 4px 0 0 0;">Enable manual Link token configuration using JSON by using the toggle to the right. This will override the basic configuration above.</p>
+            </div>
+            <div class="config-toggle">
+                <div class="toggle-switch" id="advancedToggle"></div>
+            </div>
+        </div>
+
+        <div id="advancedSection" class="disabled-section">
+            <div class="form-group">
+                <label>Additional Parameters (JSON)</label>
+                <textarea 
+                    id="jsonConfig" 
+                    class="json-editor" 
+                    placeholder='{
+  "webhook": "https://your-webhook-url.com/webhook",
+  "link_customization_name": "default",
+  "account_filters": {
+    "depository": {
+      "account_subtypes": ["checking", "savings"]
+    }
+  },
+  "auth": {
+    "automated_microdeposits_enabled": true,
+    "instant_match_enabled": true
+  }
+}'></textarea>
+                <div id="jsonStatus" class="json-status json-valid">JSON is valid</div>
+                <div class="help-text">
+                    Add any additional Link token parameters as JSON. See <a href="https://plaid.com/docs/api/link/#linktokencreate" target="_blank" style="color: #6366f1;">Plaid documentation</a> for all available options.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display: flex; gap: 16px; justify-content: center; margin-top: 32px;">
+        <button id="applyConfig" class="btn btn-primary btn-large">
+            Apply Configuration
+        </button>
+        <button id="resetConfig" class="btn btn-secondary btn-large">
+            Reset to Defaults
+        </button>
+        <button id="savePreset" class="btn btn-success btn-large">
+            Save as Preset
+        </button>
+    </div>
+
+    <!-- Status Display -->
+    <div id="configStatus"></div>
+
+    <!-- Load JavaScript modules -->
+    <script src="/js/api-client.js"></script>
+    <script src="/js/ui-utils.js"></script>
+    <script src="/js/link-config.js"></script>
+</body>
+</html>
