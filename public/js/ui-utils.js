@@ -86,7 +86,8 @@ class UIUtils {
     static populateSelect(select, options, placeholder = 'Select an option...') {
         const selectEl = typeof select === 'string' ? document.getElementById(select) : select;
         if (!selectEl) return;
-
+        
+        selectEl.style.backgroundColor = 'white'; // Reset background color
         selectEl.innerHTML = `<option value="">${placeholder}</option>`;
         
         options.forEach(option => {

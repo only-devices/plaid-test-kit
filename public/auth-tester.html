@@ -7,11 +7,19 @@
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-    <div class="header">
-        <h1>Auth API Tester</h1>
-        <p>Test Auth /get endpoint and microdeposit verification with connected accounts</p>
-        <nav class="nav">
-            <a href="/" class="nav-link">← Back to Link</a>
+    <div class="navbar">
+        <a href="/" class="navbar-brand">
+            <img src="/assets/symbol-holo.png" alt="Plaid logo">
+            <div>
+                <div class="navbar-title">Auth APIs</div>
+                <div class="navbar-subtitle">Test /get endpoint</div>
+            </div>
+        </a>
+        <nav class="navbar-nav">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/link-config.html" class="nav-link">Link Config</a>
+            <a href="/identity-tester.html" class="nav-link">Identity</a>
+            <a href="/auth-tester.html" class="nav-link active">Auth</a>
         </nav>
     </div>
 
@@ -24,16 +32,16 @@
                     <label for="accessTokenInput">Access Token:</label>
                     <input type="text" id="accessTokenInput" placeholder="Enter access token or connect via Link">
                 </div>
-                <button class="btn btn-primary" onclick="setAccessToken()">1️⃣ Set Token</button>
-                <span class="jumbo-emoji">  👉  </span>
-                <button class="btn btn-outline" onclick="loadAccounts()">2️⃣ Load Accounts</button>
+                <button id="setTokenButton" class="btn btn-primary" onclick="setAccessToken()">Set Token & Load Accounts</button>
             </div>
             <div>
                 <div id="tokenStatus"></div>
-                <div id="currentTokenDisplay" class="code-display hidden"></div>
             </div>
         </div>
     </div>
+    
+    <!-- Status Display -->
+    <div id="apiStatus"></div>
 
     <!-- Main Testing Interface -->
     <div class="grid grid-2">
@@ -123,9 +131,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- Status Display -->
-    <div id="apiStatus"></div>
 
     <!-- Load JavaScript modules -->
     <script src="/js/api-client.js"></script>

@@ -12,7 +12,7 @@
             border: 2px solid #e2e8f0;
             border-radius: 16px;
             padding: 24px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .config-header {
@@ -202,11 +202,19 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Link Token Configuration</h1>
-        <p>Customize your Plaid Link experience with advanced configuration options</p>
-        <nav class="nav">
-            <a href="/" class="nav-link">← Back to Main</a>
+    <div class="navbar">
+        <a href="/" class="navbar-brand">
+            <img src="/assets/symbol-holo.png" alt="Plaid logo">
+            <div>
+                <div class="navbar-title">Link Configuration</div>
+                <div class="navbar-subtitle">Customize Link token parameters</div>
+            </div>
+        </a>
+        <nav class="navbar-nav">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/link-config.html" class="nav-link active">Link Config</a>
+            <a href="/identity-tester.html" class="nav-link">Identity</a>
+            <a href="/auth-tester.html" class="nav-link">Auth</a>
         </nav>
     </div>
 
@@ -309,7 +317,7 @@
 
         <div id="advancedSection" class="disabled-section">
             <div class="form-group">
-                <label>Additional Parameters (JSON)</label>
+                <label>Link Token Create (JSON)</label>
                 <textarea 
                     id="jsonConfig" 
                     class="json-editor" 
@@ -335,7 +343,7 @@
     </div>
 
     <!-- Action Buttons -->
-    <div style="display: flex; gap: 16px; justify-content: center; margin-top: 32px;">
+    <div style="display: flex; gap: 16px; justify-content: center; margin-top: 24px;">
         <button id="applyConfig" class="btn btn-primary btn-large">
             Apply Configuration
         </button>

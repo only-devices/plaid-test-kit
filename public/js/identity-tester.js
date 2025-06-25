@@ -4,6 +4,7 @@ class IdentityTester {
     constructor() {
         this.hasAccessToken = false;
         this.currentToken = null;
+        this.rawResponseData = null;
         this.init();
     }
 
@@ -49,14 +50,19 @@ class IdentityTester {
             
             // Insert after header
             const header = document.querySelector('.header');
-            header.parentNode.insertBefore(banner, header.nextSibling);
+            if (header && header.parentNode) {
+                header.parentNode.insertBefore(banner, header.nextSibling);
+            } else {
+                // Fallback: append to body or another container
+                document.body.prepend(banner);
+            }
         }
 
         banner.innerHTML = `
             <div class="grid grid-2">
                 <div>
-                    <h4 style="margin: 0;">An access token is already available</h4>
-                    <p style="margin: 5px 0 0 0; color: #666;">Ready to test Identity APIs or start over with a new connection.</p>
+                    <h4 style="margin: 0;">An access token has been set</h4>
+                    <p style="margin: 5px 0 0 0; color: #666;">Ready to test. Or, start over with a new connection.</p>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end;">
                     <button class="btn btn-outline" onclick="copyExistingToken()">Copy Token</button>
@@ -65,7 +71,7 @@ class IdentityTester {
             </div>
         `;
 
-        UIUtils.showStatus('tokenStatus', 'Access token loaded - ready to test APIs', 'success');
+        UIUtils.showStatus('tokenStatus', 'Access token set - ready to test APIs', 'success');
     }
 
     async copyExistingToken() {
@@ -101,6 +107,7 @@ class IdentityTester {
             // Reset local state
             this.hasAccessToken = false;
             this.currentToken = null;
+            this.rawResponseData = null;
             
             // Clear UI elements
             UIUtils.toggleElement('currentTokenDisplay', false);
@@ -134,7 +141,6 @@ class IdentityTester {
         }
 
         try {
-            UIUtils.setButtonLoading(event.target, true, 'Validating...');
             
             const response = await window.apiClient.setAccessToken(accessToken);
             
@@ -142,45 +148,42 @@ class IdentityTester {
                 this.hasAccessToken = true;
                 this.currentToken = accessToken;
                 
-                UIUtils.showStatus('tokenStatus', 'Access token set successfully!', 'success');
-                UIUtils.toggleElement('currentTokenDisplay', true);
-                document.getElementById('currentTokenDisplay').textContent = UIUtils.formatToken(accessToken);
-                
                 // Auto-load accounts
                 this.loadAccounts();
+                // Display existing token banner
+                this.showExistingTokenBanner();
             } else {
                 throw new Error(response.error);
             }
         } catch (error) {
             UIUtils.showStatus('tokenStatus', `Error: ${error.message}`, 'error');
-        } finally {
-            UIUtils.setButtonLoading(event.target, false);
         }
     }
 
-    async loadAccounts() {
+    async loadAccounts(event) {
         if (!this.hasAccessToken) {
             UIUtils.showStatus('apiStatus', 'Please set an access token first', 'error');
             return;
         }
 
-        try {
-            UIUtils.setButtonLoading(event.target, true, 'Loading...');
-            
+        try {            
             const response = await window.apiClient.getAccounts();
             
             if (response.success) {
                 this.populateAccountSelect(response.accounts);
                 
                 const count = response.accounts.length;
-                UIUtils.showStatus('apiStatus', `Loaded ${count} account${count !== 1 ? 's' : ''}`, 'success');
+                UIUtils.showStatus('apiStatus', `✅ Loaded ${count} account${count !== 1 ? 's' : ''}`, 'success');
+
+                if (document.getElementById('setTokenButton')) {
+
+                    UIUtils.setButtonLoading(document.getElementById('setTokenButton'), true, 'Token Set & Accounts Loaded');
+                }
             } else {
                 throw new Error(response.error);
             }
         } catch (error) {
-            UIUtils.showStatus('apiStatus', `Error loading accounts: ${error.message}`, 'error');
-        } finally {
-            UIUtils.setButtonLoading(event.target, false);
+            UIUtils.showStatus('apiStatus', `❌ Error loading accounts: ${error.message}`, 'error');
         }
     }
 
@@ -223,7 +226,7 @@ class IdentityTester {
 
         // Validate at least some data is provided
         if (!userData.name && !userData.email && !userData.phone) {
-            UIUtils.showStatus('apiStatus', 'Please enter at least one piece of information to test', 'error');
+            UIUtils.showStatus('apiStatus', '⚠️ Please enter at least one piece of information to test', 'error');
             return;
         }
 
@@ -235,15 +238,23 @@ class IdentityTester {
             
             if (response.success) {
                 this.updateResults(response);
+                this.rawResponseData = response.raw_response;
                 
                 const accountInfo = response.selected_account ? 
                     ` (Account: ${response.selected_account.name || response.selected_account.official_name})` : '';
                 UIUtils.showStatus('apiStatus', `Identity APIs called successfully!${accountInfo}`, 'success');
+                
+                // Populate raw response sections
+                document.getElementById('rawIdentityGetResponse').innerHTML = UIUtils.syntaxHighlight(this.rawResponseData.identity_get || '{"message": "Raw response not available. Poorly written code most likely cause."}');
+                document.getElementById('rawIdentityMatchResponse').innerHTML = UIUtils.syntaxHighlight(this.rawResponseData.identity_match || '{"message": "Raw response not available. Poorly written code most likely cause."}');
             } else {
                 throw new Error(response.error);
             }
         } catch (error) {
             UIUtils.showStatus('apiStatus', `Error: ${error.message}`, 'error');
+            this.rawResponseData = { error: error.message };
+            document.getElementById('rawIdentityGetResponse').innerHTML = UIUtils.syntaxHighlight(this.rawResponseData);
+            document.getElementById('rawIdentityMatchResponse').innerHTML = UIUtils.syntaxHighlight(this.rawResponseData);
         } finally {
             const submitButton = document.querySelector('#identityForm button[type="submit"]');
             UIUtils.setButtonLoading(submitButton, false);
@@ -321,6 +332,23 @@ class IdentityTester {
         });
     }
 
+async copyRawResponse(key) {
+    if (this.rawResponseData) {
+        let dataToCopy = this.rawResponseData;
+        if (key && this.rawResponseData.hasOwnProperty(key)) {
+            dataToCopy = this.rawResponseData[key];
+        }
+        const success = await UIUtils.copyToClipboard(JSON.stringify(dataToCopy, null, 2));
+        if (success) {
+            UIUtils.showNotification('Response copied to clipboard!', 'success');
+        } else {
+            UIUtils.showNotification('Failed to copy response', 'error');
+        }
+    } else {
+        UIUtils.showNotification('No response data available', 'error');
+    }
+}
+
     // Helper method to pre-fill form with sample data
     fillSampleData() {
         document.getElementById('name').value = 'John Doe';
@@ -345,6 +373,10 @@ function loadAccounts() {
 
 function copyExistingToken() {
     window.identityTester.copyExistingToken();
+}
+
+function copyRawResponse() {
+    window.identityTester.copyRawResponse();
 }
 
 function clearTokenAndStartOver() {

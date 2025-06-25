@@ -88,7 +88,7 @@ class LinkTokenConfig {
             if (response.has_custom_link_config && response.custom_link_config) {
                 this.config = { ...this.getDefaultConfig(), ...response.custom_link_config };
                 this.updateUIFromConfig();
-                UIUtils.showStatus('configStatus', 'Loaded existing configuration from server', 'info');
+                UIUtils.showStatus('configStatus', '✅ Loaded existing configuration from server', 'info');
             }
         } catch (error) {
             console.log('No existing config found:', error);
@@ -294,8 +294,8 @@ class LinkTokenConfig {
         const configToShow = this.isAdvancedMode 
             ? this.getAdvancedConfig()
             : this.getBasicConfig();
-            
-        preview.textContent = JSON.stringify(configToShow, null, 2);
+
+        preview.innerHTML = UIUtils.syntaxHighlight(configToShow);
     }
 
     getBasicConfig() {

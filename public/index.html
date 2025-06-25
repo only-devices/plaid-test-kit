@@ -8,9 +8,20 @@
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-    <div class="header">
-        <img src="assets/plaid-bw.png" width="180" alt="Plaid logo" />
-        <p>Welcome to the Test Kit!</p>
+    <div class="navbar">
+        <a href="/" class="navbar-brand">
+            <img src="/assets/symbol-holo.png" alt="Plaid logo">
+            <div>
+                <div class="navbar-title">Test Kit</div>
+                <div class="navbar-subtitle">Welcome. Now go and test all the things!</div>
+            </div>
+        </a>
+        <nav class="navbar-nav">
+            <a href="/" class="nav-link active">Home</a>
+            <a href="/link-config.html" class="nav-link">Link Config</a>
+            <a href="/identity-tester.html" class="nav-link">Identity</a>
+            <a href="/auth-tester.html" class="nav-link">Auth</a>
+        </nav>
     </div>
 
     <!-- Link Configuration Banner -->
@@ -87,47 +98,27 @@
         </div>
     </div>
 
-    <!-- Direct Token Input Section -->
-    <div class="card">
-        <h2>Or Use an Existing Access Token</h2>
-        
-        <div class="grid grid-2">
-            <div>
-                <div class="form-group">
-                    <p>If you already have an access token, you can set it directly and skip the Link process.</p>
-                    <label for="directAccessToken">Access Token:</label>
-                    <input type="text" id="directAccessToken" placeholder="access-..." class="form-control">
-                </div>
-            </div>
-            <div style="display: flex; align-items: flex-end; padding: 22px;">
-                <button class="btn btn-success btn-full" onclick="setDirectAccessToken()">Set Access Token</button>
-            </div>
-        </div>
-        
-        <div id="directTokenStatus"></div>
-    </div>
-
     <!-- App Modules Section -->
     <div class="card">
         <h2>Testing Modules</h2>
         <p>Direct access to different Plaid API testing modules. Each module can use an existing access token or guide you through Link.</p>
         
         <div class="grid grid-3">
-            <div class="feature-card" onclick="window.location.href='/identity-tester.html'">
-                <h3>🆔 Identity APIs</h3>
-                <p>Test Identity /get and /match endpoints with comprehensive data comparison and scoring.</p>
-                <button class="btn btn-primary btn-full">Open Identity Tester</button>
-            </div>
-            
             <div class="feature-card" onclick="window.location.href='/auth-tester.html'">
                 <h3>🏦 Auth APIs</h3>
-                <p>Test Auth /get endpoint for account & routing numbers, plus microdeposit verification.</p>
+                <p>Test Auth /get endpoint for account & routing numbers</p>
                 <button class="btn btn-primary btn-full">Open Auth Tester</button>
+            </div>
+            
+            <div class="feature-card" onclick="window.location.href='/identity-tester.html'">
+                <h3>🆔 Identity APIs</h3>
+                <p>See /identity/get responses and /identity/match scores and results</p>
+                <button class="btn btn-primary btn-full">Open Identity Tester</button>
             </div>
             
             <div class="feature-card" style="opacity: 0.6; cursor: not-allowed;">
                 <h3>📊 Transactions APIs</h3>
-                <p>Test Transactions endpoints for account history and categorization. (Coming soon)</p>
+                <p>Test Transactions endpoints for account history and categorization (Coming soon)</p>
                 <button class="btn btn-secondary btn-full" disabled>Coming Soon</button>
             </div>
         </div>

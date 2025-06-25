@@ -25,7 +25,7 @@ body {
     font-family: var(--font-sans);
     max-width: 1200px;
     margin: 0 auto;
-    padding: 24px;
+    padding: 16px;
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     line-height: 1.6;
     color: var(--plaid-dark);
@@ -34,7 +34,7 @@ body {
 
 /* Typography */
 h1 {
-    font-size: 3rem;
+    font-size: 2.5rem;
     font-weight: 700;
     background: linear-gradient(135deg, var(--plaid-purple) 0%, var(--plaid-blue) 100%);
     -webkit-background-clip: text;
@@ -72,9 +72,9 @@ p {
 /* Layout Components */
 .header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 24px;
     background: white;
-    padding: 24px;
+    padding: 20px 24px;
     border-radius: var(--border-radius-lg);
     box-shadow: var(--box-shadow);
     border: 1px solid var(--plaid-border);
@@ -86,12 +86,87 @@ p {
     margin-top: 8px;
 }
 
-.card {
+/* Navbar-style header for non-homepage */
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
     background: white;
-    padding: 32px;
+    padding: 16px 24px;
     border-radius: var(--border-radius-lg);
     box-shadow: var(--box-shadow);
-    margin-bottom: 32px;
+    border: 1px solid var(--plaid-border);
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--plaid-dark);
+}
+
+.navbar-brand img {
+    height: 72px;
+    width: auto;
+}
+
+.navbar-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--plaid-purple) 0%, var(--plaid-blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+.navbar-subtitle {
+    font-size: 0.875rem;
+    color: var(--plaid-gray);
+    margin: 0;
+    font-weight: 400;
+}
+
+.navbar-nav {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.navbar-nav .nav-link {
+    color: var(--plaid-gray);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    font-size: 14px;
+    border: 1px solid transparent;
+}
+
+.navbar-nav .nav-link:hover {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--plaid-purple);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.navbar-nav .nav-link.active {
+    background: var(--plaid-purple);
+    color: white;
+    border-color: var(--plaid-purple);
+}
+
+.card {
+    background: white;
+    padding: 24px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 20px;
     border: 1px solid var(--plaid-border);
     transition: all 0.2s ease;
 }
@@ -102,7 +177,7 @@ p {
 
 .grid {
     display: grid;
-    gap: 24px;
+    gap: 20px;
 }
 
 .grid-2 { grid-template-columns: 2fr 1fr; }
@@ -114,21 +189,36 @@ p {
     }
     
     body {
-        padding: 16px;
+        padding: 12px;
     }
     
-    .header {
-        padding: 32px 24px;
+    .header, .navbar {
+        padding: 16px 20px;
     }
     
     .card {
-        padding: 24px;
+        padding: 20px;
+    }
+
+    .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .navbar-nav {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .navbar-title {
+        font-size: 1.25rem;
     }
 }
 
 /* Form Elements */
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 18px;
 }
 
 label {
@@ -164,6 +254,10 @@ textarea:focus {
     border-color: var(--plaid-purple);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
     transform: translateY(-1px);
+}
+
+#accountSelect {
+    background-color: #FFF9C4;
 }
 
 /* Buttons */
@@ -244,11 +338,15 @@ textarea:focus {
     min-width: 160px;
 }
 
+.btn-full {
+    width: 100%;
+}
+
 /* Status Messages */
 .status {
     padding: 16px 20px;
     border-radius: var(--border-radius);
-    margin: 20px 0;
+    margin: 16px 0;
     border-left: 4px solid;
     font-weight: 500;
 }
@@ -405,7 +503,7 @@ textarea:focus {
 .feature-card {
     border: 2px solid var(--plaid-border);
     border-radius: var(--border-radius-lg);
-    padding: 32px;
+    padding: 24px;
     text-align: center;
     transition: all 0.3s ease;
     cursor: pointer;

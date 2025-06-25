@@ -28,7 +28,7 @@ class AuthTester {
             }
         } catch (error) {
             console.log('Health check failed:', error);
-            UIUtils.showStatus('tokenStatus', 'Please enter an access token to begin testing', 'info');
+            UIUtils.showStatus('tokenStatus', 'Please enter an access token to begin testing???', 'info');
         }
     }
 
@@ -44,14 +44,19 @@ class AuthTester {
             
             // Insert after header
             const header = document.querySelector('.header');
-            header.parentNode.insertBefore(banner, header.nextSibling);
+            if (header && header.parentNode) {
+                header.parentNode.insertBefore(banner, header.nextSibling);
+            } else {
+                // Fallback: append to body or another container
+                document.body.prepend(banner);
+            }
         }
 
         banner.innerHTML = `
             <div class="grid grid-2">
                 <div>
-                    <h4 style="margin: 0;">An access token is already available</h4>
-                    <p style="margin: 5px 0 0 0; color: #666;">Ready to test Auth APIs or start over with a new connection.</p>
+                    <h4 style="margin: 0;">An access token has been set</h4>
+                    <p style="margin: 5px 0 0 0; color: #666;">Ready to test. Or, start over with a new connection.</p>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end;">
                     <button class="btn btn-outline" onclick="copyExistingToken()">Copy Token</button>
@@ -60,7 +65,7 @@ class AuthTester {
             </div>
         `;
 
-        UIUtils.showStatus('tokenStatus', 'Access token loaded - ready to test Auth APIs', 'success');
+        UIUtils.showStatus('tokenStatus', 'Access token set - ready to test Auth APIs', 'success');
     }
 
     async copyExistingToken() {
@@ -99,12 +104,11 @@ class AuthTester {
             this.rawResponseData = null;
             
             // Clear UI elements
-            UIUtils.toggleElement('currentTokenDisplay', false);
             UIUtils.showStatus('tokenStatus', 'Access token cleared. Please enter a new token or connect via Link.', 'info');
             
             // Clear accounts and results
             const accountSelect = document.getElementById('accountSelect');
-            UIUtils.populateSelect(accountSelect, [], 'Load accounts first...');
+            UIUtils.populateSelect(accountSelect, [], '🚫 Accounts not loaded yet!');
             this.clearResults();
             
             UIUtils.showNotification('Access token cleared - redirecting to start page...', 'success');
@@ -129,9 +133,7 @@ class AuthTester {
             return;
         }
 
-        try {
-            UIUtils.setButtonLoading(event.target, true, 'Validating...');
-            
+        try {            
             const response = await window.apiClient.setAccessToken(accessToken);
             
             if (response.success) {
@@ -139,44 +141,44 @@ class AuthTester {
                 this.currentToken = accessToken;
                 
                 UIUtils.showStatus('tokenStatus', 'Access token set successfully!', 'success');
-                UIUtils.toggleElement('currentTokenDisplay', true);
-                document.getElementById('currentTokenDisplay').textContent = UIUtils.formatToken(accessToken);
                 
                 // Auto-load accounts
                 this.loadAccounts();
+                // Display existing token banner
+                this.showExistingTokenBanner();
             } else {
                 throw new Error(response.error);
             }
         } catch (error) {
             UIUtils.showStatus('tokenStatus', `Error: ${error.message}`, 'error');
-        } finally {
-            UIUtils.setButtonLoading(event.target, false);
         }
     }
 
-    async loadAccounts() {
+
+    async loadAccounts(event) {
         if (!this.hasAccessToken) {
             UIUtils.showStatus('apiStatus', 'Please set an access token first', 'error');
             return;
         }
 
-        try {
-            UIUtils.setButtonLoading(event.target, true, 'Loading...');
-            
+        try {            
             const response = await window.apiClient.getAccounts();
             
             if (response.success) {
                 this.populateAccountSelect(response.accounts);
                 
                 const count = response.accounts.length;
-                UIUtils.showStatus('apiStatus', `Loaded ${count} account${count !== 1 ? 's' : ''}`, 'success');
+                UIUtils.showStatus('apiStatus', `✅ Loaded ${count} account${count !== 1 ? 's' : ''}`, 'success');
+
+                if (document.getElementById('setTokenButton')) {
+
+                    UIUtils.setButtonLoading(document.getElementById('setTokenButton'), true, 'Token Set & Accounts Loaded');
+                }
             } else {
                 throw new Error(response.error);
             }
         } catch (error) {
-            UIUtils.showStatus('apiStatus', `Error loading accounts: ${error.message}`, 'error');
-        } finally {
-            UIUtils.setButtonLoading(event.target, false);
+            UIUtils.showStatus('apiStatus', `❌ Error loading accounts: ${error.message}`, 'error');
         }
     }
 
@@ -221,8 +223,8 @@ class AuthTester {
             
             if (response.success) {
                 this.updateAuthResults(response);
-                this.rawResponseData = response;
-                document.getElementById('rawResponse').innerHTML = UIUtils.syntaxHighlight(response.raw_response || '{}');
+                this.rawResponseData = response.raw_response;
+                document.getElementById('rawResponse').innerHTML = UIUtils.syntaxHighlight(this.rawResponseData || '{}');
                 
                 const accountInfo = response.selected_account ? 
                     ` (Account: ${response.selected_account.name || response.selected_account.official_name})` : '';
@@ -291,20 +293,18 @@ class AuthTester {
     }
 
     // Helper method to clear all results
-    clearResults() {
-        // Clear account info
-        document.getElementById('accountInfo').textContent = '-';
-        
+    clearResults() {        
         // Clear auth data
+        document.getElementById('accountId').textContent = '-';
+        document.getElementById('accountName').textContent = '-';
+        document.getElementById('accountMask').textContent = '-';
         document.getElementById('accountNumber').textContent = 'Click "Get Account & Routing Numbers" to retrieve';
         document.getElementById('routingNumber').textContent = '-';
         document.getElementById('wireRoutingNumber').textContent = '-';
         document.getElementById('accountType').textContent = '-';
         document.getElementById('accountSubtype').textContent = '-';
-        document.getElementById('verificationStatus').textContent = '-';
         document.getElementById('availableBalance').textContent = '-';
         document.getElementById('currentBalance').textContent = '-';
-        document.getElementById('expectedResolveDate').textContent = '-';
         
         // Clear raw response
         document.getElementById('rawResponse').textContent = '// API response will appear here after testing';

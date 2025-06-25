@@ -464,6 +464,10 @@ app.post('/api/test-identity', async (req, res) => {
         is_nickname_match: matchData.legal_name?.is_nickname_match || false,
         is_first_name_or_last_name_match: matchData.legal_name?.is_first_name_or_last_name_match || false,
         is_business_name_detected: matchData.legal_name?.is_business_name_detected || false
+      },
+      raw_response: {
+        identity_get: getResponse.data,
+        identity_match: matchResponse.data
       }
     });
 

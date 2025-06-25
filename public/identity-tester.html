@@ -7,11 +7,19 @@
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-    <div class="header">
-        <h1>Identity API Tester</h1>
-        <p>Test Identity /get and /match endpoints with connected accounts</p>
-        <nav class="nav">
-            <a href="/" class="nav-link">← Back to Link</a>
+    <div class="navbar">
+        <a href="/" class="navbar-brand">
+            <img src="/assets/symbol-holo.png" alt="Plaid logo">
+            <div>
+                <div class="navbar-title">Identity APIs</div>
+                <div class="navbar-subtitle">Test /get and /match endpoints</div>
+            </div>
+        </a>
+        <nav class="navbar-nav">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/link-config.html" class="nav-link">Link Config</a>
+            <a href="/identity-tester.html" class="nav-link active">Identity</a>
+            <a href="/auth-tester.html" class="nav-link">Auth</a>
         </nav>
     </div>
 
@@ -24,8 +32,7 @@
                     <label for="accessTokenInput">Access Token:</label>
                     <input type="text" id="accessTokenInput" placeholder="Enter access token or connect via Link">
                 </div>
-                <button class="btn btn-primary" onclick="setAccessToken()">Set Token</button>
-                <button class="btn btn-outline" onclick="loadAccounts()">Load Accounts</button>
+                <button id="setTokenButton" class="btn btn-primary" onclick="setAccessToken()">Set Token & Load Accounts</button>
             </div>
             <div>
                 <div id="tokenStatus"></div>
@@ -33,6 +40,9 @@
             </div>
         </div>
     </div>
+    
+    <!-- Status Display -->
+    <div id="apiStatus"></div>
 
     <!-- Main Testing Interface -->
     <div class="grid grid-3">
@@ -43,23 +53,23 @@
                 <div class="form-group">
                     <label for="accountSelect">Select Account:</label>
                     <select id="accountSelect" name="account_index">
-                        <option value="">Load accounts first...</option>
+                    <option value="">🚫 Accounts not loaded yet!</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label for="name">Full Name:</label>
-                    <input type="text" id="name" name="name" placeholder="John Doe">
+                    <input type="text" id="name" name="name" placeholder="Joe MacMillan">
                 </div>
                 
                 <div class="form-group">
                     <label for="email">Email Address:</label>
-                    <input type="email" id="email" name="email" placeholder="john@example.com">
+                    <input type="email" id="email" name="email" placeholder="joe@cardiffelectric.com">
                 </div>
                 
                 <div class="form-group">
                     <label for="phone">Phone Number:</label>
-                    <input type="tel" id="phone" name="phone" placeholder="+1234567890">
+                    <input type="tel" id="phone" name="phone" placeholder="+555-555-5555">
                 </div>
                 
                 <div class="form-group">
@@ -69,17 +79,17 @@
                 
                 <div class="form-group">
                     <label for="city">City:</label>
-                    <input type="text" id="city" name="city" placeholder="San Francisco">
+                    <input type="text" id="city" name="city" placeholder="Austin">
                 </div>
                 
                 <div class="form-group">
                     <label for="state">State:</label>
-                    <input type="text" id="state" name="state" placeholder="CA">
+                    <input type="text" id="state" name="state" placeholder="TX">
                 </div>
                 
                 <div class="form-group">
                     <label for="zip">ZIP Code:</label>
-                    <input type="text" id="zip" name="zip" placeholder="94105">
+                    <input type="text" id="zip" name="zip" placeholder="73301">
                 </div>
                 
                 <div class="form-group">
@@ -184,9 +194,20 @@
             </div>
         </div>
     </div>
-    
-    <!-- Status Display -->
-    <div id="apiStatus"></div>
+
+    <!-- Raw Response Section -->
+    <div class="card">
+        <h3>/identity/get Raw API Response</h3>
+            <div class="config-preview">
+                <pre id="rawIdentityGetResponse" class="terminal" style="max-height: 400px; overflow-y: auto;">// API response will appear here after testing</pre>
+            </div>
+            <button class="btn btn-outline mt-1" onclick="copyRawResponse('identity_get')" style="margin-top: 8px;">Copy Response</button>
+        <h3>/identity/match Raw API Response</h3>
+            <div class="config-preview">
+                <pre id="rawIdentityMatchResponse" class="terminal" style="max-height: 400px; overflow-y: auto;">// API response will appear here after testing</pre>
+            </div>
+            <button class="btn btn-outline mt-1" onclick="copyRawResponse('identity_match')" style="margin-top: 8px;">Copy Response</button>
+    </div>
 
     <!-- Load JavaScript modules -->
     <script src="/js/api-client.js"></script>

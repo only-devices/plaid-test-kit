@@ -54,7 +54,12 @@ class StartPage {
             
             // Insert after header
             const header = document.querySelector('.header');
-            header.parentNode.insertBefore(banner, header.nextSibling);
+            if (header && header.parentNode) {
+                header.parentNode.insertBefore(banner, header.nextSibling);
+            } else {
+                // Fallback: append to body or another container
+                document.body.prepend(banner);
+            }
         }
 
         banner.innerHTML = `
@@ -435,12 +440,12 @@ class StartPage {
                 this.customConfig = config;
                 this.showConfigurationBanner();
                 this.updateConfigStatus();
-                UIUtils.showNotification(`Loaded "${presetType}" configuration`, 'success');
+                UIUtils.showNotification(`✅ Loaded "${presetType}" configuration`, 'success');
             } else {
                 throw new Error(response.error);
             }
         } catch (error) {
-            UIUtils.showNotification(`Failed to load preset: ${error.message}`, 'error');
+            UIUtils.showNotification(`❌ Failed to load preset: ${error.message}`, 'error');
         } finally {
             UIUtils.setButtonLoading(event.target, false);
         }
@@ -634,10 +639,6 @@ class StartPage {
         UIUtils.clearStatus('globalStatus');
         UIUtils.clearStatus('embeddedStatus');
         UIUtils.clearStatus('updateStatus');
-        
-        // Reset form
-        document.getElementById('updateAccessToken').value = '';
-        document.getElementById('directAccessToken').value = '';
         
         // Reset embedded container
         const container = document.getElementById('linkContainer');
