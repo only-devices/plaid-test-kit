@@ -141,10 +141,10 @@ class PlaidLinkManager {
         this.isEmbedded = false;
     }
 
-    /**
+/**
      * Create link token with custom configuration support
      * @param {Object} options - Token creation options
-     * @param {string} options.mode - 'standard', 'embedded', or 'update'
+     * @param {string} options.mode - 'standard', 'embedded', 'hosted', or 'update'
      * @param {string} options.accessToken - Required for update mode
      * @param {Object} options.custom_config - Custom Link token configuration
      */
@@ -156,6 +156,11 @@ class PlaidLinkManager {
         // Include custom configuration if provided
         if (custom_config) {
             tokenRequest.custom_config = custom_config;
+        }
+        
+        // For hosted mode, include hosted_link object
+        if (mode === 'hosted') {
+            tokenRequest.hosted_link = {};
         }
         
         // For update mode, include access token and account selection

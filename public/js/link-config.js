@@ -84,15 +84,50 @@ class LinkTokenConfig {
 
     async loadExistingConfig() {
         try {
+            // First check localStorage
+            const storedConfig = localStorage.getItem('plaid_link_config');
+            if (storedConfig) {
+                try {
+                    const parsedConfig = JSON.parse(storedConfig);
+                    this.config = { ...this.getDefaultConfig(), ...parsedConfig };
+                    this.updateUIFromConfig();
+
+                    const configName = localStorage.getItem('plaid_link_config_name') || 'Saved Configuration';
+                    UIUtils.showStatus('configStatus', `Loaded "${configName}" from local storage`, 'info');
+                    return;
+                } catch (parseError) {
+                    console.error('Failed to parse localStorage config:', parseError);
+                    localStorage.removeItem('plaid_link_config');
+                    localStorage.removeItem('plaid_link_config_name');
+                }
+            }
+
+            // Then check server
             const response = await window.apiClient.getHealth();
             if (response.has_custom_link_config && response.custom_link_config) {
                 this.config = { ...this.getDefaultConfig(), ...response.custom_link_config };
                 this.updateUIFromConfig();
-                UIUtils.showStatus('configStatus', '✅ Loaded existing configuration from server', 'info');
+                UIUtils.showStatus('configStatus', 'Loaded existing configuration from server', 'info');
             }
         } catch (error) {
             console.log('No existing config found:', error);
         }
+    }
+
+    savePreset() {
+        const presetName = prompt('Enter a name for this preset:');
+        if (!presetName) return;
+
+        const finalConfig = this.getFinalConfig();
+
+        // Save as the active configuration that start page will detect
+        localStorage.setItem('plaid_link_config', JSON.stringify(finalConfig));
+        localStorage.setItem('plaid_link_config_name', presetName);
+
+        UIUtils.showNotification(`Preset "${presetName}" saved and activated!`, 'success');
+        UIUtils.showStatus('configStatus', `Preset "${presetName}" saved as active configuration`, 'success');
+
+        console.log('Available presets:', Object.keys(presets));
     }
 
     updateUIFromConfig() {
@@ -265,7 +300,7 @@ class LinkTokenConfig {
         // Remove empty arrays to keep JSON clean
         if (jsonConfig.optional_products.length === 0) delete jsonConfig.optional_products;
         if (jsonConfig.required_if_supported_products.length === 0) delete jsonConfig.required_if_supported_products;
-        
+
         document.getElementById('jsonConfig').value = JSON.stringify(jsonConfig, null, 2);
         this.validateAndUpdateJSON();
     }
@@ -278,7 +313,7 @@ class LinkTokenConfig {
             const parsed = JSON.parse(jsonText);
             statusEl.textContent = 'JSON is valid';
             statusEl.className = 'json-status json-valid';
-            
+
             if (this.isAdvancedMode) {
                 this.config = { ...this.getDefaultConfig(), ...parsed };
                 this.updatePreview();
@@ -291,7 +326,7 @@ class LinkTokenConfig {
 
     updatePreview() {
         const preview = document.getElementById('configPreview');
-        const configToShow = this.isAdvancedMode 
+        const configToShow = this.isAdvancedMode
             ? this.getAdvancedConfig()
             : this.getBasicConfig();
 
@@ -300,11 +335,11 @@ class LinkTokenConfig {
 
     getBasicConfig() {
         const config = { ...this.config };
-        
+
         // Clean up empty arrays
         if (config.optional_products.length === 0) delete config.optional_products;
         if (config.required_if_supported_products.length === 0) delete config.required_if_supported_products;
-        
+
         return config;
     }
 
@@ -323,37 +358,47 @@ class LinkTokenConfig {
     async applyConfiguration() {
         try {
             UIUtils.setButtonLoading(document.getElementById('applyConfig'), true, 'Applying...');
-            
+
             const finalConfig = this.getFinalConfig();
-            
+
             // Validate configuration
             if (!finalConfig.products || finalConfig.products.length === 0) {
                 throw new Error('At least one product must be selected');
             }
-            
+
             if (!finalConfig.country_codes || finalConfig.country_codes.length === 0) {
                 throw new Error('At least one country code must be selected');
             }
 
+            // Save to localStorage with consistent keys
+            const configName = `Applied Config (${finalConfig.products.join(', ')})`;
+            localStorage.setItem('plaid_link_config', JSON.stringify(finalConfig));
+            localStorage.setItem('plaid_link_config_name', configName);
+
             // Send configuration to server
-            const response = await window.apiClient.request('/api/set-link-config', {
-                method: 'POST',
-                body: JSON.stringify({ config: finalConfig })
-            });
-            
-            if (response.success) {
-                UIUtils.showStatus('configStatus', 'Configuration applied successfully! Link tokens will now use these settings.', 'success');
-                UIUtils.showNotification('Configuration saved! You can now create Link tokens with these settings.', 'success');
-                
-                // Optional: redirect to main page
-                setTimeout(() => {
-                    if (confirm('Configuration saved! Would you like to return to the main page to test it?')) {
-                        window.location.href = '/';
-                    }
-                }, 2000);
-            } else {
-                throw new Error(response.error || 'Failed to apply configuration');
+            try {
+                const response = await window.apiClient.request('/api/set-link-config', {
+                    method: 'POST',
+                    body: JSON.stringify({ config: finalConfig })
+                });
+
+                if (response.success) {
+                    UIUtils.showStatus('configStatus', 'Configuration applied successfully! Link tokens will now use these settings.', 'success');
+                    UIUtils.showNotification('Configuration saved and applied!', 'success');
+                } else {
+                    throw new Error(response.error || 'Failed to apply configuration to server');
+                }
+            } catch (serverError) {
+                console.warn('Server save failed, but localStorage config is active:', serverError);
+                UIUtils.showStatus('configStatus', 'Configuration saved locally but server update failed. You can still test with this config.', 'warning');
+                UIUtils.showNotification('Configuration saved locally (server failed)', 'warning');
             }
+
+            setTimeout(() => {
+                if (confirm('Configuration saved! Would you like to return to the main page to test it?')) {
+                    window.location.href = '/';
+                }
+            }, 2000);
 
         } catch (error) {
             UIUtils.showStatus('configStatus', `Error: ${error.message}`, 'error');
@@ -365,34 +410,42 @@ class LinkTokenConfig {
 
     async resetToDefaults() {
         try {
+            // Clear localStorage configuration
+            localStorage.removeItem('plaid_link_config');
+            localStorage.removeItem('plaid_link_config_name');
+
             // Clear server configuration
-            await window.apiClient.request('/api/clear-link-config', {
-                method: 'POST'
-            });
+            try {
+                await window.apiClient.request('/api/clear-link-config', {
+                    method: 'POST'
+                });
+            } catch (serverError) {
+                console.warn('Server clear failed:', serverError);
+            }
 
             this.config = this.getDefaultConfig();
             this.isAdvancedMode = false;
-            
+
             // Reset UI
             document.getElementById('advancedToggle').classList.remove('active');
             document.getElementById('advancedSection').classList.add('disabled-section');
             document.getElementById('clientName').value = this.config.client_name;
             document.getElementById('language').value = this.config.language;
-            
+
             // Reset country checkboxes
             document.querySelectorAll('.country-checkbox').forEach(cb => {
                 cb.checked = this.config.country_codes.includes(cb.value);
             });
-            
+
             // Reset products table
             this.renderProductsTable();
-            
+
             // Clear JSON
             document.getElementById('jsonConfig').value = '';
-            
+
             this.updatePreview();
             UIUtils.showStatus('configStatus', 'Configuration reset to defaults', 'info');
-            UIUtils.showNotification('Configuration reset to defaults', 'info');
+            UIUtils.showNotification('Configuration reset to defaults (both local and server)', 'info');
         } catch (error) {
             UIUtils.showNotification(`Failed to reset configuration: ${error.message}`, 'error');
         }
@@ -401,33 +454,15 @@ class LinkTokenConfig {
     savePreset() {
         const presetName = prompt('Enter a name for this preset:');
         if (!presetName) return;
-        
-        const presets = JSON.parse(localStorage.getItem('linkTokenPresets') || '{}');
-        presets[presetName] = this.getFinalConfig();
-        localStorage.setItem('linkTokenPresets', JSON.stringify(presets));
-        
-        UIUtils.showNotification(`Preset "${presetName}" saved to local storage!`, 'success');
-        
-        // You could extend this to save to server as well
-        console.log('Available presets:', Object.keys(presets));
-    }
 
-    loadPreset(presetName) {
-        const presets = JSON.parse(localStorage.getItem('linkTokenPresets') || '{}');
-        if (presets[presetName]) {
-            this.config = { ...this.getDefaultConfig(), ...presets[presetName] };
-            this.updateUIFromConfig();
-            this.updatePreview();
-            UIUtils.showNotification(`Preset "${presetName}" loaded!`, 'success');
-        } else {
-            UIUtils.showNotification(`Preset "${presetName}" not found`, 'error');
-        }
-    }
+        const finalConfig = this.getFinalConfig();
 
-    // Helper method to get available presets
-    getAvailablePresets() {
-        const presets = JSON.parse(localStorage.getItem('linkTokenPresets') || '{}');
-        return Object.keys(presets);
+        // Save as the active configuration using consistent keys
+        localStorage.setItem('plaid_link_config', JSON.stringify(finalConfig));
+        localStorage.setItem('plaid_link_config_name', `${presetName} Preset`);
+
+        UIUtils.showNotification(`Preset "${presetName}" saved and activated!`, 'success');
+        UIUtils.showStatus('configStatus', `Preset "${presetName}" is now the active configuration`, 'success');
     }
 }
 
@@ -448,7 +483,7 @@ function getAvailablePresets() {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.linkTokenConfig = new LinkTokenConfig();
-    
+
     // Add keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         // Ctrl+S to save/apply
@@ -456,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             document.getElementById('applyConfig').click();
         }
-        
+
         // Ctrl+R to reset
         if (e.ctrlKey && e.key === 'r') {
             e.preventDefault();

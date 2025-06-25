@@ -65,6 +65,7 @@ app.post('/api/create-link-token', async (req, res) => {
       update_mode, 
       access_token, 
       custom_config,
+      hosted_link,
       ...requestOverrides 
     } = req.body;
     
@@ -99,6 +100,15 @@ app.post('/api/create-link-token', async (req, res) => {
     // Add OAuth redirect URI for OAuth support
     linkTokenConfig.redirect_uri = `http://localhost:${PORT}/oauth-redirect`;
 
+    // Handle hosted link mode
+    if (hosted_link) {
+      linkTokenConfig.hosted_link = hosted_link;
+      // For hosted link, also set completion redirect URI to return to our app
+      if (!linkTokenConfig.hosted_link.completion_redirect_uri) {
+        linkTokenConfig.hosted_link.completion_redirect_uri = `http://localhost:${PORT}/hosted-link-complete`;
+      }
+    }
+
     // Handle update mode
     if (update_mode && access_token) {
       linkTokenConfig.access_token = access_token;
@@ -114,6 +124,7 @@ app.post('/api/create-link-token', async (req, res) => {
     res.json({
       success: true,
       link_token: response.data.link_token,
+      hosted_link_url: response.data.hosted_link_url || null,
       configuration_used: linkTokenConfig
     });
   } catch (error) {
@@ -209,6 +220,67 @@ app.post('/api/clear-link-config', async (req, res) => {
   }
 });
 
+// Hosted Link completion handler
+app.get('/hosted-link-complete', async (req, res) => {
+  try {
+    console.log('Hosted Link completion received');
+    
+    // Return a simple page that will handle the completion
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Link Complete</title>
+        <meta charset="UTF-8">
+        <style>
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            text-align: center; 
+            padding: 40px; 
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          }
+          .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+          }
+          .spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+            font-size: 24px;
+            margin-bottom: 16px;
+          }
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="spinner">⟳</div>
+          <h3>Processing your connection...</h3>
+          <p>Please wait while we finalize your bank connection.</p>
+          <p><small>You will be redirected automatically.</small></p>
+        </div>
+        <script>
+          // Auto-redirect to main page after a short delay
+          setTimeout(() => {
+            window.location.href = '/?hosted_complete=true';
+          }, 2000);
+        </script>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error('Hosted Link completion error:', error);
+    res.status(500).send('Hosted Link completion failed');
+  }
+});
+
 // OAuth redirect handler
 app.get('/oauth-redirect', async (req, res) => {
   try {
@@ -249,6 +321,66 @@ app.get('/oauth-redirect', async (req, res) => {
   } catch (error) {
     console.error('OAuth redirect error:', error);
     res.status(500).send('OAuth redirect failed');
+  }
+});
+
+// Get link token details (for hosted link completion)
+app.post('/api/get-link-token', async (req, res) => {
+  try {
+    const { link_token } = req.body;
+    
+    if (!link_token) {
+      return res.status(400).json({ error: 'link_token is required' });
+    }
+
+    const response = await plaidClient.linkTokenGet({
+      link_token: link_token,
+    });
+
+    // Extract public token from the most recent successful session
+    let publicToken = null;
+    let metadata = null;
+    
+    if (response.data.link_sessions && response.data.link_sessions.length > 0) {
+      // Find the most recent completed session
+      const completedSessions = response.data.link_sessions
+        .filter(session => session.finished_at && session.results)
+        .sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at));
+      
+      if (completedSessions.length > 0) {
+        const latestSession = completedSessions[0];
+        
+        // Check for public token in results (preferred method)
+        if (latestSession.results && latestSession.results.item_add_results && latestSession.results.item_add_results.length > 0) {
+          publicToken = latestSession.results.item_add_results[0].public_token;
+          metadata = {
+            institution: latestSession.results.item_add_results[0].institution,
+            accounts: latestSession.results.item_add_results[0].accounts,
+            link_session_id: latestSession.link_session_id
+          };
+        }
+        // Fallback to on_success object
+        else if (latestSession.on_success && latestSession.on_success.public_token) {
+          publicToken = latestSession.on_success.public_token;
+          metadata = latestSession.on_success.metadata;
+        }
+      }
+    }
+    
+    res.json({
+      success: true,
+      public_token: publicToken,
+      metadata: metadata,
+      link_sessions: response.data.link_sessions,
+      has_completed_session: !!publicToken
+    });
+
+  } catch (error) {
+    console.error('Get link token error:', error);
+    res.status(500).json({ 
+      error: 'Failed to get link token details', 
+      details: error.response?.data || error.message 
+    });
   }
 });
 

@@ -58,6 +58,14 @@ class ApiClient {
         });
     }
 
+    // Get link token details (for hosted link)
+    async getLinkToken(linkToken) {
+        return this.request('/api/get-link-token', {
+            method: 'POST',
+            body: JSON.stringify({ link_token: linkToken })
+        });
+    }
+
     // Account Operations
     async getAccounts() {
         return this.request('/api/get-accounts', {

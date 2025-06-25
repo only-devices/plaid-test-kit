@@ -1,10 +1,9 @@
-// public/js/start-page.js
-
 class StartPage {
     constructor() {
         this.currentAccessToken = null;
         this.currentMode = null;
         this.customConfig = null;
+        this.hostedLinkData = null; // Store hosted link session data
         this.init();
     }
 
@@ -12,6 +11,75 @@ class StartPage {
         // Check if we have an existing token and configuration
         this.checkExistingToken();
         this.checkCustomConfiguration();
+
+        // Check if we're returning from a hosted link session
+        this.checkHostedLinkCompletion();
+    }
+
+    checkHostedLinkCompletion() {
+        // Check if we're returning from a hosted link session
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('hosted_complete') === 'true') {
+            // Check for stored hosted link session data
+            const storedData = localStorage.getItem('plaid_hosted_link_session');
+            if (storedData) {
+                try {
+                    this.hostedLinkData = JSON.parse(storedData);
+                    this.processHostedLinkCompletion();
+                } catch (error) {
+                    console.error('Failed to parse stored hosted link data:', error);
+                    UIUtils.showStatus('globalStatus', 'Error processing hosted link completion', 'error');
+                }
+            } else {
+                UIUtils.showStatus('globalStatus', 'Hosted link session completed, but no session data found', 'warning');
+            }
+
+            // Clean up URL
+            window.history.replaceState({}, document.title, '/');
+        }
+    }
+
+    async processHostedLinkCompletion() {
+        try {
+            UIUtils.showStatus('globalStatus', 'Processing hosted link completion...', 'info');
+
+            if (!this.hostedLinkData || !this.hostedLinkData.link_token) {
+                throw new Error('No link token found in session data');
+            }
+
+            // Get the link token details to retrieve the public token
+            const response = await window.apiClient.getLinkToken(this.hostedLinkData.link_token);
+
+            if (response.success && response.has_completed_session && response.public_token) {
+                // Exchange the public token for an access token
+                const exchangeResponse = await window.apiClient.exchangePublicToken(response.public_token);
+
+                if (exchangeResponse.success) {
+                    this.currentAccessToken = exchangeResponse.access_token;
+
+                    // Show success with hosted link specific messaging
+                    const metadata = response.metadata || {};
+                    metadata.auth_type = 'hosted'; // Mark as hosted link
+
+                    this.showSuccessSection(metadata, 'Hosted Link');
+
+                    UIUtils.showNotification('Hosted Link connection successful!', 'success');
+                } else {
+                    throw new Error(exchangeResponse.error);
+                }
+            } else if (!response.has_completed_session) {
+                UIUtils.showStatus('globalStatus', 'Hosted link session was not completed successfully', 'warning');
+            } else {
+                throw new Error('No public token found in completed session');
+            }
+        } catch (error) {
+            console.error('Hosted link completion error:', error);
+            UIUtils.showStatus('globalStatus', `Failed to process hosted link completion: ${error.message}`, 'error');
+        } finally {
+            // Clean up stored session data
+            localStorage.removeItem('plaid_hosted_link_session');
+            this.hostedLinkData = null;
+        }
     }
 
     async checkExistingToken() {
@@ -28,6 +96,16 @@ class StartPage {
 
     async checkCustomConfiguration() {
         try {
+            // First check localStorage for saved configuration
+            const storedConfig = this.getStoredConfiguration();
+            if (storedConfig) {
+                this.customConfig = storedConfig;
+                this.showConfigurationBanner();
+                this.updateConfigStatus();
+                return;
+            }
+
+            // Then check server for custom configuration
             const health = await window.apiClient.getHealth();
             if (health.has_custom_link_config && health.custom_link_config) {
                 this.customConfig = health.custom_link_config;
@@ -51,7 +129,7 @@ class StartPage {
             banner.className = 'card';
             banner.style.backgroundColor = '#e3f2fd';
             banner.style.borderLeft = '4px solid #2196f3';
-            
+
             // Insert after header
             const header = document.querySelector('.header');
             if (header && header.parentNode) {
@@ -80,13 +158,17 @@ class StartPage {
         const banner = document.getElementById('configBanner');
         if (banner && this.customConfig) {
             banner.classList.remove('hidden');
-            
+
             // Update summary
             const summary = document.getElementById('configSummary');
             const productCount = this.customConfig.products ? this.customConfig.products.length : 0;
             const countryCount = this.customConfig.country_codes ? this.customConfig.country_codes.length : 0;
-            
-            summary.textContent = `Using ${productCount} product(s) and ${countryCount} country code(s)`;
+
+            // Check if this is from localStorage
+            const storedConfig = this.getStoredConfiguration();
+            const configName = storedConfig ? this.getStoredConfigurationName() : 'Server Configuration';
+
+            summary.textContent = `${configName} - ${productCount} product(s) and ${countryCount} country code(s)`;
         }
     }
 
@@ -94,19 +176,89 @@ class StartPage {
         const statusEl = document.getElementById('configStatus');
         if (!statusEl) return;
 
-        if (this.customConfig) {
-            const productsList = this.customConfig.products ? this.customConfig.products.join(', ') : 'none';
-            const countriesList = this.customConfig.country_codes ? this.customConfig.country_codes.join(', ') : 'none';
-            
+        // Check for localStorage configurations first
+        const storedConfig = this.getStoredConfiguration();
+        const displayConfig = storedConfig || this.customConfig;
+
+        if (displayConfig) {
+            const productsList = displayConfig.products ? displayConfig.products.join(', ') : 'none';
+            const countriesList = displayConfig.country_codes ? displayConfig.country_codes.join(', ') : 'none';
+            const configSource = storedConfig ? 'Local Storage' : 'Server';
+            const configName = storedConfig ? this.getStoredConfigurationName() : 'Custom Server Config';
+
             statusEl.innerHTML = `
                 <div style="padding: 12px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 8px; border-left: 3px solid #10b981;">
                     <div style="font-size: 13px; color: #047857;">
-                        <div><strong>Products:</strong> ${productsList}</div>
-                        <div><strong>Countries:</strong> ${countriesList}</div>
-                        <div><strong>Client:</strong> ${this.customConfig.client_name || 'Plaid Test Kit'}</div>
+                        <div style="margin-bottom: 8px;"><strong>Configuration:</strong> ${configName}</div>
+                        <div style="margin-bottom: 4px;"><strong>Source:</strong> ${configSource}</div>
+                        <div style="margin-bottom: 4px;"><strong>Products:</strong> ${productsList}</div>
+                        <div style="margin-bottom: 4px;"><strong>Countries:</strong> ${countriesList}</div>
+                        <div><strong>Client:</strong> ${displayConfig.client_name || 'Plaid Test Kit'}</div>
                     </div>
                 </div>
-            `;;
+            `;
+        } else {
+            // Default configuration display
+            statusEl.innerHTML = `
+                <div style="padding: 12px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 8px; border-left: 3px solid #10b981;">
+                    <div style="font-size: 13px; color: #047857;">
+                        <div style="margin-bottom: 8px;"><strong>Configuration:</strong> Default</div>
+                        <div style="margin-bottom: 4px;"><strong>Source:</strong> Built-in</div>
+                        <div style="margin-bottom: 4px;"><strong>Products:</strong> auth</div>
+                        <div style="margin-bottom: 4px;"><strong>Countries:</strong> US</div>
+                        <div><strong>Client:</strong> Plaid Test Kit</div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    getStoredConfiguration() {
+        try {
+            const storedConfig = localStorage.getItem('plaid_link_config');
+            return storedConfig ? JSON.parse(storedConfig) : null;
+        } catch (error) {
+            console.error('Failed to parse stored configuration:', error);
+            return null;
+        }
+    }
+
+    getStoredConfigurationName() {
+        try {
+            const configName = localStorage.getItem('plaid_link_config_name');
+            return configName || 'Saved Configuration';
+        } catch (error) {
+            console.error('Failed to get stored configuration name:', error);
+            return 'Saved Configuration';
+        }
+    }
+
+    setStoredConfiguration(config, name = 'Custom Configuration') {
+        try {
+            localStorage.setItem('plaid_link_config', JSON.stringify(config));
+            localStorage.setItem('plaid_link_config_name', name);
+            this.customConfig = config;
+            this.updateConfigStatus();
+            this.showConfigurationBanner();
+        } catch (error) {
+            console.error('Failed to store configuration:', error);
+        }
+    }
+
+    clearStoredConfiguration() {
+        try {
+            localStorage.removeItem('plaid_link_config');
+            localStorage.removeItem('plaid_link_config_name');
+            this.customConfig = null;
+            this.updateConfigStatus();
+
+            // Hide banner if it exists
+            const banner = document.getElementById('configBanner');
+            if (banner) {
+                banner.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error('Failed to clear stored configuration:', error);
         }
     }
 
@@ -114,7 +266,7 @@ class StartPage {
         try {
             const health = await window.apiClient.getHealth();
             console.log('Health response:', health); // Debug log
-            
+
             if (health.access_token) {
                 const success = await UIUtils.copyToClipboard(health.access_token);
                 if (success) {
@@ -136,22 +288,22 @@ class StartPage {
         try {
             // Clear token on server
             await window.apiClient.clearToken();
-            
+
             // Remove the banner
             const banner = document.getElementById('existingTokenBanner');
             if (banner) {
                 banner.remove();
             }
-            
+
             // Reset local state
             this.currentAccessToken = null;
-            
+
             // Clear direct token status
             UIUtils.clearStatus('directTokenStatus');
-            
+
             // Call existing start over functionality
             this.startOver();
-            
+
             UIUtils.showNotification('Access token cleared successfully', 'success');
         } catch (error) {
             UIUtils.showNotification('Failed to clear token', 'error');
@@ -194,13 +346,13 @@ class StartPage {
     async startEmbeddedLink() {
         try {
             this.currentMode = 'embedded';
-            
+
             // Show embedded container
             UIUtils.toggleElement('embeddedContainer', true);
-            
+
             // Scroll to embedded container
-            document.getElementById('embeddedContainer').scrollIntoView({ 
-                behavior: 'smooth' 
+            document.getElementById('embeddedContainer').scrollIntoView({
+                behavior: 'smooth'
             });
 
             UIUtils.showStatus('embeddedStatus', 'Creating Link token...', 'info');
@@ -232,11 +384,11 @@ class StartPage {
                     // Clear placeholder content when Link loads
                     const placeholders = container.querySelectorAll('.link-container-placeholder');
                     placeholders.forEach(placeholder => placeholder.remove());
-                    
+
                     // Ensure container styling is correct for iframe
                     container.style.background = 'transparent';
                     container.style.padding = '0';
-                    
+
                     // Find and style the iframe if it exists
                     setTimeout(() => {
                         const iframe = container.querySelector('iframe');
@@ -250,17 +402,17 @@ class StartPage {
                             console.warn('No iframe found in embedded Link container');
                         }
                     }, 100);
-                    
+
                     UIUtils.showStatus('embeddedStatus', 'Embedded Link loaded! Select an institution above.', 'success');
                 },
                 onEvent: (eventName, metadata) => {
                     console.log('Embedded Link event:', eventName, metadata);
-                    
+
                     // Handle error events specifically
                     if (eventName === 'ERROR') {
                         console.error('Embedded Link ERROR:', metadata);
                         UIUtils.showStatus('embeddedStatus', `Link error: ${metadata.error_message || 'Unknown error'}`, 'error');
-                        
+
                         // Show error in container
                         container.innerHTML = `
                             <div class="link-container-placeholder" style="color: #dc3545;">
@@ -275,7 +427,7 @@ class StartPage {
                         container.style.background = 'transparent';
                         UIUtils.showStatus('embeddedStatus', 'Embedded Link ready!', 'success');
                     }
-                    
+
                     // Call the shared event handler
                     this.handleLinkEvent(eventName, metadata);
                 }
@@ -284,6 +436,153 @@ class StartPage {
         } catch (error) {
             UIUtils.showStatus('embeddedStatus', `Failed to start Embedded Link: ${error.message}`, 'error');
         }
+    }
+
+    async startHostedLink() {
+        try {
+            this.currentMode = 'hosted';
+            UIUtils.showStatus('globalStatus', 'Creating Hosted Link session...', 'info');
+
+            // Create link token for hosted mode with custom config
+            const tokenResponse = await window.plaidLinkManager.createLinkToken({
+                mode: 'hosted',
+                custom_config: this.customConfig
+            });
+
+            if (!tokenResponse.success) {
+                throw new Error(tokenResponse.error);
+            }
+
+            if (!tokenResponse.hosted_link_url) {
+                throw new Error('No hosted link URL returned from server');
+            }
+
+            // Store session data for completion handling
+            this.hostedLinkData = {
+                link_token: tokenResponse.link_token,
+                hosted_link_url: tokenResponse.hosted_link_url,
+                created_at: new Date().toISOString()
+            };
+
+            // Store in localStorage to persist across page refreshes
+            localStorage.setItem('plaid_hosted_link_session', JSON.stringify(this.hostedLinkData));
+
+            // Show hosted link section
+            UIUtils.toggleElement('hostedLinkCard', true);
+
+            // Update the hosted link info
+            const hostedLinkInfo = document.getElementById('hostedLinkInfo');
+            hostedLinkInfo.innerHTML = `
+                <div style="background: #f0fdf4; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                    <p style="margin: 0 0 8px 0;"><strong>✅ Hosted Link session created successfully!</strong></p>
+                    <p style="margin: 0; font-size: 14px; color: #166534;">Click "Open Hosted Link" to start the connection process in a new tab.</p>
+                </div>
+                <div style="background: #fef3c7; padding: 12px; border-radius: 8px; font-size: 13px; color: #92400e;">
+                    <strong>Note:</strong> After completing the connection in the new tab, you'll be redirected back here automatically.
+                </div>
+            `;
+
+            // Store the URL in the button for easy access
+            document.getElementById('openHostedLink').dataset.url = tokenResponse.hosted_link_url;
+
+            // Scroll to hosted link section
+            document.getElementById('hostedLinkCard').scrollIntoView({
+                behavior: 'smooth'
+            });
+
+            UIUtils.showStatus('globalStatus', 'Hosted Link session ready! Click "Open Hosted Link" to continue.', 'success');
+
+        } catch (error) {
+            UIUtils.showStatus('globalStatus', `Failed to start Hosted Link: ${error.message}`, 'error');
+        }
+    }
+
+    openHostedLinkUrl() {
+        if (this.hostedLinkData && this.hostedLinkData.hosted_link_url) {
+            // Open in new tab
+            window.open(this.hostedLinkData.hosted_link_url, '_blank');
+
+            UIUtils.showStatus('hostedLinkStatus', 'Hosted Link opened in new tab. Complete the connection there and you\'ll be redirected back here.', 'info');
+
+            // Start polling for completion (optional - the redirect will handle it)
+            this.startHostedLinkPolling();
+        } else {
+            UIUtils.showStatus('hostedLinkStatus', 'No hosted link URL available', 'error');
+        }
+    }
+
+    async checkHostedLinkStatus() {
+        if (!this.hostedLinkData || !this.hostedLinkData.link_token) {
+            UIUtils.showStatus('hostedLinkStatus', 'No active hosted link session', 'error');
+            return;
+        }
+
+        try {
+            UIUtils.setButtonLoading(event.target, true, 'Checking...');
+
+            const response = await window.apiClient.getLinkToken(this.hostedLinkData.link_token);
+
+            if (response.success) {
+                if (response.has_completed_session && response.public_token) {
+                    UIUtils.showStatus('hostedLinkStatus', 'Session completed! Processing connection...', 'success');
+
+                    // Process the completion
+                    await this.processHostedLinkCompletion();
+                } else {
+                    const sessionCount = response.link_sessions ? response.link_sessions.length : 0;
+                    UIUtils.showStatus('hostedLinkStatus', `Session active. ${sessionCount} session(s) found. No completion yet.`, 'info');
+                }
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            UIUtils.showStatus('hostedLinkStatus', `Failed to check status: ${error.message}`, 'error');
+        } finally {
+            UIUtils.setButtonLoading(event.target, false);
+        }
+    }
+
+    startHostedLinkPolling() {
+        // Poll every 5 seconds for completion (optional fallback)
+        if (this.hostedLinkPollingInterval) {
+            clearInterval(this.hostedLinkPollingInterval);
+        }
+
+        this.hostedLinkPollingInterval = setInterval(() => {
+            try {
+                const response = window.apiClient.getLinkToken(this.hostedLinkData.link_token);
+
+                if (response.success && response.has_completed_session && response.public_token) {
+                    clearInterval(this.hostedLinkPollingInterval);
+                    this.hostedLinkPollingInterval = null;
+
+                    // Don't auto-process here - let the redirect handle it
+                    console.log('Hosted link completion detected via polling');
+                }
+            } catch (error) {
+                console.log('Polling error (expected):', error.message);
+            }
+        }, 5000);
+    }
+
+    cancelHostedLink() {
+        // Clean up hosted link session
+        if (this.hostedLinkPollingInterval) {
+            clearInterval(this.hostedLinkPollingInterval);
+            this.hostedLinkPollingInterval = null;
+        }
+
+        localStorage.removeItem('plaid_hosted_link_session');
+        this.hostedLinkData = null;
+
+        // Hide hosted link section
+        UIUtils.toggleElement('hostedLinkCard', false);
+
+        // Clear status
+        UIUtils.clearStatus('globalStatus');
+        UIUtils.clearStatus('hostedLinkStatus');
+
+        UIUtils.showNotification('Hosted Link session cancelled', 'info');
     }
 
     showUpdateMode() {
@@ -298,11 +597,11 @@ class StartPage {
         UIUtils.toggleElement('updateModeCard', false);
         UIUtils.clearStatus('updateStatus');
     }
-
+    
     async startUpdateMode() {
         try {
             const accessToken = document.getElementById('updateAccessToken').value.trim();
-            
+
             if (!accessToken) {
                 UIUtils.showStatus('updateStatus', 'Please enter an access token', 'error');
                 return;
@@ -341,7 +640,7 @@ class StartPage {
 
     async setDirectAccessToken() {
         const accessToken = document.getElementById('directAccessToken').value.trim();
-        
+
         if (!accessToken) {
             UIUtils.showStatus('directTokenStatus', 'Please enter an access token', 'error');
             return;
@@ -349,13 +648,13 @@ class StartPage {
 
         try {
             UIUtils.setButtonLoading(event.target, true, 'Validating...');
-            
+
             const response = await window.apiClient.setAccessToken(accessToken);
-            
+
             if (response.success) {
                 this.currentAccessToken = accessToken;
                 UIUtils.showStatus('directTokenStatus', 'Access token set successfully! You can now test APIs or start over.', 'success');
-                
+
                 // Show success section
                 this.showSuccessSection({ institution: { name: 'Direct Token' } }, 'Direct');
             } else {
@@ -369,30 +668,24 @@ class StartPage {
     }
 
     // Configuration management functions
-    async viewConfiguration() {
+    viewConfiguration() {
         window.location.href = '/link-config.html';
     }
 
     async clearConfiguration() {
         try {
+            // Clear both server and localStorage configurations
             await window.apiClient.request('/api/clear-link-config', {
                 method: 'POST'
             });
-            
-            this.customConfig = null;
-            
-            // Hide banner
-            const banner = document.getElementById('configBanner');
-            if (banner) {
-                banner.classList.add('hidden');
-            }
-            
-            // Update status
-            this.updateConfigStatus();
-            
+
+            this.clearStoredConfiguration();
+
             UIUtils.showNotification('Configuration cleared - using defaults', 'success');
         } catch (error) {
-            UIUtils.showNotification(`Failed to clear configuration: ${error.message}`, 'error');
+            // Even if server fails, still clear localStorage
+            this.clearStoredConfiguration();
+            UIUtils.showNotification('Local configuration cleared (server may have failed)', 'warning');
         }
     }
 
@@ -416,9 +709,9 @@ class StartPage {
                 country_codes: ['US'],
                 language: 'en'
             },
-            'multi-product': {
+            'ABI': {
                 products: ['transactions', 'identity', 'auth'],
-                client_name: 'Plaid Test Kit - Multi Product',
+                client_name: 'Plaid Test Kit - ABI (Auth, Balance, Identity)',
                 country_codes: ['US'],
                 language: 'en'
             }
@@ -431,23 +724,25 @@ class StartPage {
         }
 
         try {
+            // Save to localStorage with preset name
+            const presetName = `${presetType.toUpperCase()} Preset`;
+            this.setStoredConfiguration(config, presetName);
+
+            // Also save to server
             const response = await window.apiClient.request('/api/set-link-config', {
                 method: 'POST',
                 body: JSON.stringify({ config })
             });
-            
+
             if (response.success) {
-                this.customConfig = config;
-                this.showConfigurationBanner();
-                this.updateConfigStatus();
-                UIUtils.showNotification(`✅ Loaded "${presetType}" configuration`, 'success');
+                UIUtils.showNotification(`Loaded "${presetName}" configuration`, 'success');
             } else {
-                throw new Error(response.error);
+                // If server fails, still keep localStorage version
+                console.warn('Failed to save to server, but localStorage config is active');
+                UIUtils.showNotification(`Loaded "${presetName}" configuration (local only)`, 'warning');
             }
         } catch (error) {
-            UIUtils.showNotification(`❌ Failed to load preset: ${error.message}`, 'error');
-        } finally {
-            UIUtils.setButtonLoading(event.target, false);
+            UIUtils.showNotification(`Failed to load preset: ${error.message}`, 'error');
         }
     }
 
@@ -455,7 +750,7 @@ class StartPage {
         try {
             const authMethod = metadata.auth_type === 'oauth' ? 'OAuth' : 'credentials';
             const statusMessage = `Bank connected via ${authMethod}! Exchanging token...`;
-            
+
             // Show status in appropriate location
             if (this.currentMode === 'embedded') {
                 UIUtils.showStatus('embeddedStatus', statusMessage, 'success');
@@ -474,7 +769,7 @@ class StartPage {
 
             // Exchange public token for access token
             const exchangeResponse = await window.apiClient.exchangePublicToken(publicToken);
-            
+
             if (exchangeResponse.success) {
                 this.currentAccessToken = exchangeResponse.access_token;
                 this.showSuccessSection(metadata, authMethod);
@@ -495,7 +790,7 @@ class StartPage {
     handleLinkExit(err, metadata) {
         if (err) {
             const errorMessage = `Link error: ${err.error_message || err.message || 'Unknown error'}`;
-            
+
             if (this.currentMode === 'embedded') {
                 UIUtils.showStatus('embeddedStatus', errorMessage, 'error');
                 // Update container to show error
@@ -513,7 +808,7 @@ class StartPage {
         } else {
             // User cancelled
             const cancelMessage = 'Connection cancelled by user';
-            
+
             if (this.currentMode === 'embedded') {
                 UIUtils.showStatus('embeddedStatus', cancelMessage, 'info');
                 // Reset container
@@ -532,7 +827,7 @@ class StartPage {
 
     handleLinkEvent(eventName, metadata) {
         console.log('Link event:', { eventName, metadata, mode: this.currentMode });
-        
+
         // Handle specific events for user feedback
         if (eventName === 'SEARCH_INSTITUTION') {
             const message = 'Institution search performed...';
@@ -572,14 +867,14 @@ class StartPage {
         // Hide other sections
         UIUtils.toggleElement('embeddedContainer', false);
         UIUtils.toggleElement('updateModeCard', false);
-        
+
         // Show success section
         UIUtils.toggleElement('successSection', true);
-        
+
         // Update connection info
         const connectionInfo = document.getElementById('connectionInfo');
         const configUsed = this.customConfig ? 'Custom' : 'Default';
-        
+
         connectionInfo.innerHTML = `
             <div class="grid grid-2">
                 <div>
@@ -602,16 +897,16 @@ class StartPage {
                 </div>
             </div>
         `;
-        
+
         // Display token
         const tokenDisplay = document.getElementById('tokenDisplay');
         tokenDisplay.textContent = this.currentAccessToken;
-        
+
         // Scroll to success section
-        document.getElementById('successSection').scrollIntoView({ 
-            behavior: 'smooth' 
+        document.getElementById('successSection').scrollIntoView({
+            behavior: 'smooth'
         });
-        
+
         // Clear other status messages
         UIUtils.clearStatus('globalStatus');
         UIUtils.clearStatus('embeddedStatus');
@@ -634,12 +929,12 @@ class StartPage {
         UIUtils.toggleElement('embeddedContainer', false);
         UIUtils.toggleElement('updateModeCard', false);
         UIUtils.toggleElement('successSection', false);
-        
+
         // Clear all status messages
         UIUtils.clearStatus('globalStatus');
         UIUtils.clearStatus('embeddedStatus');
         UIUtils.clearStatus('updateStatus');
-        
+
         // Reset embedded container
         const container = document.getElementById('linkContainer');
         container.innerHTML = `
@@ -649,19 +944,20 @@ class StartPage {
             </div>
         `;
         container.style.background = '#f8f9fa';
-        
+
         // Destroy any existing Link instance
         window.plaidLinkManager.destroy();
-        
+
         // Reset state
         this.currentAccessToken = null;
         this.currentMode = null;
-        
+
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
 
+// Global functions for onclick handlers
 // Global functions for onclick handlers
 function startStandardLink() {
     window.startPage.startStandardLink();
@@ -669,6 +965,22 @@ function startStandardLink() {
 
 function startEmbeddedLink() {
     window.startPage.startEmbeddedLink();
+}
+
+function startHostedLink() {
+    window.startPage.startHostedLink();
+}
+
+function openHostedLinkUrl() {
+    window.startPage.openHostedLinkUrl();
+}
+
+function checkHostedLinkStatus() {
+    window.startPage.checkHostedLinkStatus();
+}
+
+function cancelHostedLink() {
+    window.startPage.cancelHostedLink();
 }
 
 function showUpdateMode() {

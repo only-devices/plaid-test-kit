@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
     <link rel="stylesheet" href="/css/styles.css">
 </head>
+
 <body>
     <div class="navbar">
         <a href="/" class="navbar-brand">
@@ -19,17 +21,22 @@
         <nav class="navbar-nav">
             <a href="/" class="nav-link active">Home</a>
             <a href="/link-config.html" class="nav-link">Link Config</a>
-            <a href="/identity-tester.html" class="nav-link">Identity</a>
             <a href="/auth-tester.html" class="nav-link">Auth</a>
+            <a href="/identity-tester.html" class="nav-link">Identity</a>
         </nav>
     </div>
 
+    <!-- Status Display -->
+    <div id="globalStatus"></div>
+
     <!-- Link Configuration Banner -->
-    <div id="configBanner" class="card hidden" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #6366f1;">
+    <div id="configBanner" class="card hidden"
+        style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #6366f1;">
         <div class="grid grid-2">
             <div>
                 <h4 style="margin: 0; color: #1e40af;">Custom Link Configuration Active</h4>
-                <p style="margin: 5px 0 0 0; color: #1e40af;" id="configSummary">Custom settings are being used for Link token creation.</p>
+                <p style="margin: 5px 0 0 0; color: #1e40af;" id="configSummary">Custom settings are being used for Link
+                    token creation.</p>
             </div>
             <div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end;">
                 <button class="btn btn-outline" onclick="viewConfiguration()">View Config</button>
@@ -40,20 +47,39 @@
 
     <!-- Link Configuration Section -->
     <div class="card">
-        <h2>Link Configuration</h2>
-        <p>Customize your Link token creation with advanced configuration options including products, country codes, and advanced parameters.</p>
-        
+        <h2>1️⃣ Link Configuration</h2>
+        <p>Customize your Link token creation with advanced configuration options including products, country codes, and
+            advanced parameters.</p>
+
         <div class="grid grid-2">
             <div class="feature-card" onclick="window.location.href='/link-config.html'">
                 <h3>⚙️ Configure Link Token</h3>
                 <p>Customize products, country codes, and advanced Link token parameters.</p>
+                <div style="margin: 16px 0;">
+                    <h4 style="font-size: 16px; margin-bottom: 12px;">⚡️ Quick Configs</h4>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+                        <button class="btn btn-outline btn-small"
+                            onclick="event.stopPropagation(); loadPresetConfig('auth')"
+                            style="padding: 8px 16px; font-size: 14px;">Auth</button>
+                        <button class="btn btn-outline btn-small"
+                            onclick="event.stopPropagation(); loadPresetConfig('transactions')"
+                            style="padding: 8px 16px; font-size: 14px;">Transactions</button>
+                        <button class="btn btn-outline btn-small"
+                            onclick="event.stopPropagation(); loadPresetConfig('identity')"
+                            style="padding: 8px 16px; font-size: 14px;">Identity</button>
+                        <button class="btn btn-outline btn-small"
+                            onclick="event.stopPropagation(); loadPresetConfig('ABI')"
+                            style="padding: 8px 16px; font-size: 14px;">ABI</button>
+                    </div>
+                </div>
                 <button class="btn btn-primary btn-full">Open Configurator</button>
             </div>
-            
+
             <div style="padding: 24px;">
                 <h4>Current Configuration</h4>
                 <div id="configStatus" style="margin: 16px 0;">
-                    <div style="padding: 12px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 8px; border-left: 3px solid #10b981;">
+                    <div
+                        style="padding: 12px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 8px; border-left: 3px solid #10b981;">
                         <div style="font-size: 13px; color: #047857;">
                             <div><strong>Products:</strong> auth</div>
                             <div><strong>Countries:</strong> US</div>
@@ -61,35 +87,31 @@
                         </div>
                     </div>
                 </div>
-                
-                <h4>Quick Configs</h4>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button class="btn btn-outline btn-small" onclick="loadPresetConfig('auth')" style="padding: 8px 16px; font-size: 14px;">Auth</button>
-                    <button class="btn btn-outline btn-small" onclick="loadPresetConfig('transactions')" style="padding: 8px 16px; font-size: 14px;">Transactions</button>
-                    <button class="btn btn-outline btn-small" onclick="loadPresetConfig('identity')" style="padding: 8px 16px; font-size: 14px;">Identity</button>
-                    <button class="btn btn-outline btn-small" onclick="loadPresetConfig('ABI')" style="padding: 8px 16px; font-size: 14px;">ABI</button>
-                </div>
             </div>
         </div>
     </div>
 
     <div class="card">
-        <h2>Choose Your Link Experience</h2>
+        <h2>2️⃣ Choose Your Link Experience</h2>
         <p>Select how you'd like to test Plaid Link. OAuth support is automatic based on the institution you select.</p>
-        
         <div class="grid grid-3">
             <div class="feature-card" onclick="startStandardLink()">
                 <h3>🔗 Standard Link</h3>
                 <p>Classic Link experience. Works with all institutions and OAuth flows.</p>
                 <button class="btn btn-primary btn-full">Start Standard Link</button>
             </div>
-            
+
             <div class="feature-card" onclick="startEmbeddedLink()">
                 <h3>📱 Embedded Link</h3>
                 <p>Modern experience with seamless integration.</p>
                 <button class="btn btn-primary btn-full">Start Embedded Link</button>
             </div>
-            
+            <div class="feature-card" onclick="startHostedLink()">
+                <h3>🌐 Hosted Link</h3>
+                <p>Plaid-hosted experience that opens in a new tab. Perfect for mobile and webview integrations.</p>
+                <button class="btn btn-success btn-full">Start Hosted Link</button>
+            </div>
+
             <div class="feature-card" onclick="showUpdateMode()">
                 <h3>🔄 Link Update Mode</h3>
                 <p>Add additional accounts to an existing connection using update mode.</p>
@@ -98,28 +120,23 @@
         </div>
     </div>
 
-    <!-- App Modules Section -->
-    <div class="card">
-        <h2>Testing Modules</h2>
-        <p>Direct access to different Plaid API testing modules. Each module can use an existing access token or guide you through Link.</p>
-        
-        <div class="grid grid-3">
-            <div class="feature-card" onclick="window.location.href='/auth-tester.html'">
-                <h3>🏦 Auth APIs</h3>
-                <p>Test Auth /get endpoint for account & routing numbers</p>
-                <button class="btn btn-primary btn-full">Open Auth Tester</button>
+    <!-- Success Section -->
+    <div id="successSection" class="card hidden">
+        <h3>✅ Bank Connected Successfully!</h3>
+        <div id="connectionInfo"></div>
+
+        <div class="grid grid-2 mt-2">
+            <div>
+                <h4>Access Token</h4>
+                <div id="tokenDisplay" class="code-display"></div>
+                <button class="btn btn-outline mt-1" onclick="copyAccessToken()">Copy Token</button>
             </div>
-            
-            <div class="feature-card" onclick="window.location.href='/identity-tester.html'">
-                <h3>🆔 Identity APIs</h3>
-                <p>See /identity/get responses and /identity/match scores and results</p>
-                <button class="btn btn-primary btn-full">Open Identity Tester</button>
-            </div>
-            
-            <div class="feature-card" style="opacity: 0.6; cursor: not-allowed;">
-                <h3>📊 Transactions APIs</h3>
-                <p>Test Transactions endpoints for account history and categorization (Coming soon)</p>
-                <button class="btn btn-secondary btn-full" disabled>Coming Soon</button>
+
+            <div>
+                <p>Your bank account is now connected.</p>
+                <div class="grid">
+                    <button class="btn btn-outline" onclick="startOver()">Start Over</button>
+                </div>
             </div>
         </div>
     </div>
@@ -128,18 +145,41 @@
     <div id="updateModeCard" class="card hidden">
         <h3>Link Update Mode Configuration</h3>
         <p>Enter an existing access token to enable account selection for additional accounts.</p>
-        
+
         <div class="form-group">
             <label for="updateAccessToken">Access Token:</label>
             <input type="text" id="updateAccessToken" placeholder="access-xxx..." class="form-control">
         </div>
-        
+
         <div class="grid grid-2">
             <button class="btn btn-outline" onclick="hideUpdateMode()">Cancel</button>
             <button class="btn btn-success" onclick="startUpdateMode()">Start Update Mode</button>
         </div>
-        
+
         <div id="updateStatus"></div>
+    </div>
+
+    <!-- Hosted Link Status Section -->
+    <div id="hostedLinkCard" class="card hidden">
+        <h3>Hosted Link Session</h3>
+        <div id="hostedLinkInfo">
+            <p>Your Hosted Link session has been created. Click the button below to open it in a new tab.</p>
+        </div>
+
+        <div class="grid grid-2">
+            <button id="openHostedLink" class="btn btn-success btn-full" onclick="openHostedLinkUrl()">
+                🌐 Open Hosted Link
+            </button>
+            <button class="btn btn-outline btn-full" onclick="checkHostedLinkStatus()">
+                🔄 Check Status
+            </button>
+        </div>
+
+        <div id="hostedLinkStatus" style="margin-top: 16px;"></div>
+
+        <div style="margin-top: 16px;">
+            <button class="btn btn-secondary" onclick="cancelHostedLink()">Cancel Session</button>
+        </div>
     </div>
 
     <!-- Link Container for Embedded Mode -->
@@ -154,29 +194,32 @@
         <div id="embeddedStatus"></div>
     </div>
 
-    <!-- Success Section -->
-    <div id="successSection" class="card hidden">
-        <h3>✅ Bank Connected Successfully!</h3>
-        <div id="connectionInfo"></div>
-        
-        <div class="grid grid-2 mt-2">
-            <div>
-                <h4>Access Token</h4>
-                <div id="tokenDisplay" class="code-display"></div>
-                <button class="btn btn-outline mt-1" onclick="copyAccessToken()">Copy Token</button>
+    <!-- App Modules Section -->
+    <div class="card">
+        <h2>3️⃣ Testing Modules</h2>
+        <p>Direct access to different Plaid API testing modules. Each module can use an existing access token or guide
+            you through Link.</p>
+
+        <div class="grid grid-3">
+            <div class="feature-card" onclick="window.location.href='/auth-tester.html'">
+                <h3>🏦 Auth APIs</h3>
+                <p>Test Auth /get endpoint for account & routing numbers</p>
+                <button class="btn btn-primary btn-full">Open Auth Tester</button>
             </div>
-            
-            <div>
-                <p>Your bank account is now connected.</p>
-                <div class="grid">
-                    <button class="btn btn-outline" onclick="startOver()">Start Over</button>
-                </div>
+
+            <div class="feature-card" onclick="window.location.href='/identity-tester.html'">
+                <h3>🆔 Identity APIs</h3>
+                <p>See /identity/get responses and /identity/match scores and results</p>
+                <button class="btn btn-primary btn-full">Open Identity Tester</button>
+            </div>
+
+            <div class="feature-card" style="opacity: 0.6; cursor: not-allowed;">
+                <h3>📊 Transactions APIs</h3>
+                <p>Test Transactions endpoints for account history and categorization (Coming soon)</p>
+                <button class="btn btn-secondary btn-full" disabled>Coming Soon</button>
             </div>
         </div>
     </div>
-
-    <!-- Status Display -->
-    <div id="globalStatus"></div>
 
     <!-- Load JavaScript modules -->
     <script src="/js/api-client.js"></script>
@@ -184,4 +227,5 @@
     <script src="/js/ui-utils.js"></script>
     <script src="/js/start-page.js"></script>
 </body>
+
 </html>
