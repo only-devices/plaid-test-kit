@@ -548,128 +548,15 @@ app.post('/api/test-auth', async (req, res) => {
         unofficial_currency_code: authAccount.balances?.unofficial_currency_code || null
       },
       item_id: authResponse.data.item?.item_id || null,
-      request_id: authResponse.data.request_id
+      request_id: authResponse.data.request_id,
+      // Include full Plaid API response for display on-screen
+      raw_response: authResponse.data
     });
 
   } catch (error) {
     console.error('Auth API error:', error);
     res.status(500).json({ 
       error: 'Failed to test auth endpoint', 
-      details: error.response?.data || error.message 
-    });
-  }
-});
-
-// Test Microdeposits initiation
-app.post('/api/test-microdeposits', async (req, res) => {
-  try {
-    if (!accessToken) {
-      return res.status(400).json({ error: 'No access token available. Please exchange a public token first.' });
-    }
-
-    const { account_index } = req.body;
-
-    // First, get all accounts to find the selected account ID
-    const accountsResponse = await plaidClient.accountsGet({
-      access_token: accessToken,
-    });
-
-    if (!accountsResponse.data.accounts || accountsResponse.data.accounts.length === 0) {
-      throw new Error('No accounts found');
-    }
-
-    // Use the selected account index, default to 0 if not provided
-    const selectedIndex = account_index !== undefined ? parseInt(account_index) : 0;
-    
-    if (selectedIndex >= accountsResponse.data.accounts.length) {
-      throw new Error(`Selected account index ${selectedIndex} is out of range`);
-    }
-
-    const selectedAccount = accountsResponse.data.accounts[selectedIndex];
-
-    // For testing purposes, return a simulated microdeposit response
-    // In production, you would integrate with your processor's microdeposit API
-    res.json({
-      success: true,
-      selected_account: {
-        index: selectedIndex,
-        name: selectedAccount.name,
-        official_name: selectedAccount.official_name,
-        account_id: selectedAccount.account_id,
-        mask: selectedAccount.mask
-      },
-      microdeposit_data: {
-        verification_method: 'microdeposits',
-        status: 'pending_verification',
-        attempts_remaining: 3,
-        expected_resolve_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days from now
-      },
-      message: 'Microdeposits initiated. In sandbox, use amounts like $0.01 and $0.02 for testing.',
-      note: 'This is a simulated response for testing purposes.'
-    });
-
-  } catch (error) {
-    console.error('Microdeposits API error:', error);
-    res.status(500).json({ 
-      error: 'Failed to initiate microdeposits', 
-      details: error.response?.data || error.message 
-    });
-  }
-});
-
-// Verify Microdeposits amounts
-app.post('/api/verify-microdeposits', async (req, res) => {
-  try {
-    if (!accessToken) {
-      return res.status(400).json({ error: 'No access token available. Please exchange a public token first.' });
-    }
-
-    const { account_index, amount1, amount2 } = req.body;
-
-    if (amount1 === undefined || amount2 === undefined) {
-      return res.status(400).json({ error: 'Both microdeposit amounts are required' });
-    }
-
-    // Get account info
-    const accountsResponse = await plaidClient.accountsGet({
-      access_token: accessToken,
-    });
-
-    const selectedIndex = account_index !== undefined ? parseInt(account_index) : 0;
-    const selectedAccount = accountsResponse.data.accounts[selectedIndex];
-
-    // Simulate microdeposit verification
-    // In a real implementation, you would call the processor's verification endpoint
-    const isValidAmount1 = amount1 === 0.01 || amount1 === 0.02 || amount1 === 0.03;
-    const isValidAmount2 = amount2 === 0.01 || amount2 === 0.02 || amount2 === 0.03;
-    const isValid = isValidAmount1 && isValidAmount2 && amount1 !== amount2;
-
-    res.json({
-      success: true,
-      selected_account: {
-        index: selectedIndex,
-        name: selectedAccount.name,
-        official_name: selectedAccount.official_name,
-        account_id: selectedAccount.account_id,
-        mask: selectedAccount.mask
-      },
-      microdeposit_data: {
-        verification_method: 'microdeposits',
-        status: isValid ? 'verified' : 'verification_failed',
-        attempts_remaining: isValid ? 3 : 2,
-        amounts_submitted: [amount1, amount2],
-        verification_result: isValid ? 'success' : 'failed',
-        message: isValid ? 
-          'Microdeposit amounts verified successfully!' : 
-          'Verification failed. In sandbox, try amounts like $0.01 and $0.02.'
-      },
-      note: 'This is a simulated verification for testing purposes.'
-    });
-
-  } catch (error) {
-    console.error('Microdeposit verification error:', error);
-    res.status(500).json({ 
-      error: 'Failed to verify microdeposits', 
       details: error.response?.data || error.message 
     });
   }
@@ -728,7 +615,5 @@ app.listen(PORT, () => {
   console.log('  POST /api/get-accounts      - Get available accounts');
   console.log('  POST /api/test-identity     - Test Identity APIs');
   console.log('  POST /api/test-auth         - Test Auth API');
-  console.log('  POST /api/test-microdeposits - Test Microdeposits initiation');
-  console.log('  POST /api/verify-microdeposits - Verify Microdeposit amounts');
   console.log('  GET  /health               - Health check');
 });

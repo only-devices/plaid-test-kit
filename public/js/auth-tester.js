@@ -222,7 +222,7 @@ class AuthTester {
             if (response.success) {
                 this.updateAuthResults(response);
                 this.rawResponseData = response;
-                document.getElementById('rawResponse').innerHTML = UIUtils.syntaxHighlight(response);
+                document.getElementById('rawResponse').innerHTML = UIUtils.syntaxHighlight(response.raw_response || '{}');
                 
                 const accountInfo = response.selected_account ? 
                     ` (Account: ${response.selected_account.name || response.selected_account.official_name})` : '';
@@ -236,102 +236,6 @@ class AuthTester {
             document.getElementById('rawResponse').textContent = JSON.stringify(this.rawResponseData, null, 2);
         } finally {
             const submitButton = document.querySelector('button[onclick="testAuthGet()"]');
-            UIUtils.setButtonLoading(submitButton, false);
-        }
-    }
-
-    async testMicrodeposits() {
-        if (!this.hasAccessToken) {
-            UIUtils.showStatus('apiStatus', 'Please set an access token first', 'error');
-            return;
-        }
-
-        const accountSelect = document.getElementById('accountSelect');
-        const selectedIndex = accountSelect.value;
-
-        if (!selectedIndex && selectedIndex !== '0') {
-            UIUtils.showStatus('apiStatus', 'Please select an account first', 'error');
-            return;
-        }
-
-        try {
-            const submitButton = event.target;
-            UIUtils.setButtonLoading(submitButton, true, 'Initiating Microdeposits...');
-            
-            const response = await window.apiClient.request('/api/test-microdeposits', {
-                method: 'POST',
-                body: JSON.stringify({ account_index: parseInt(selectedIndex) })
-            });
-            
-            if (response.success) {
-                this.updateMicroDepositResults(response);
-                this.rawResponseData = response;
-                document.getElementById('rawResponse').textContent = JSON.stringify(response, null, 2);
-                
-                UIUtils.showStatus('apiStatus', 'Microdeposit verification initiated successfully!', 'success');
-                UIUtils.toggleElement('microDepositSection', true);
-            } else {
-                throw new Error(response.error);
-            }
-        } catch (error) {
-            UIUtils.showStatus('apiStatus', `Error: ${error.message}`, 'error');
-            this.rawResponseData = { error: error.message };
-            document.getElementById('rawResponse').textContent = JSON.stringify(this.rawResponseData, null, 2);
-        } finally {
-            const submitButton = document.querySelector('button[onclick="testMicrodeposits()"]');
-            UIUtils.setButtonLoading(submitButton, false);
-        }
-    }
-
-    async verifyMicrodeposits() {
-        if (!this.hasAccessToken) {
-            UIUtils.showStatus('apiStatus', 'Please set an access token first', 'error');
-            return;
-        }
-
-        const accountSelect = document.getElementById('accountSelect');
-        const selectedIndex = accountSelect.value;
-        const amount1 = parseFloat(document.getElementById('microAmount1').value);
-        const amount2 = parseFloat(document.getElementById('microAmount2').value);
-
-        if (!selectedIndex && selectedIndex !== '0') {
-            UIUtils.showStatus('apiStatus', 'Please select an account first', 'error');
-            return;
-        }
-
-        if (isNaN(amount1) || isNaN(amount2)) {
-            UIUtils.showStatus('apiStatus', 'Please enter valid microdeposit amounts', 'error');
-            return;
-        }
-
-        try {
-            const submitButton = event.target;
-            UIUtils.setButtonLoading(submitButton, true, 'Verifying Amounts...');
-            
-            const response = await window.apiClient.request('/api/verify-microdeposits', {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    account_index: parseInt(selectedIndex),
-                    amount1: amount1,
-                    amount2: amount2
-                })
-            });
-            
-            if (response.success) {
-                this.updateMicroDepositResults(response);
-                this.rawResponseData = response;
-                document.getElementById('rawResponse').textContent = JSON.stringify(response, null, 2);
-                
-                UIUtils.showStatus('apiStatus', 'Microdeposit amounts verified successfully!', 'success');
-            } else {
-                throw new Error(response.error);
-            }
-        } catch (error) {
-            UIUtils.showStatus('apiStatus', `Error: ${error.message}`, 'error');
-            this.rawResponseData = { error: error.message };
-            document.getElementById('rawResponse').textContent = JSON.stringify(this.rawResponseData, null, 2);
-        } finally {
-            const submitButton = document.querySelector('button[onclick="verifyMicrodeposits()"]');
             UIUtils.setButtonLoading(submitButton, false);
         }
     }
@@ -373,26 +277,6 @@ class AuthTester {
         UIUtils.showNotification('Auth API test completed!', 'success');
     }
 
-    updateMicroDepositResults(data) {
-        console.log('Microdeposit results:', data);
-
-        if (data.microdeposit_data) {
-            document.getElementById('verificationMethod').textContent = 
-                data.microdeposit_data.verification_method || '-';
-            document.getElementById('microDepositStatus').textContent = 
-                data.microdeposit_data.status || '-';
-            document.getElementById('attemptsRemaining').textContent = 
-                data.microdeposit_data.attempts_remaining !== undefined ? 
-                data.microdeposit_data.attempts_remaining : '-';
-            
-            const expectedDate = data.microdeposit_data.expected_resolve_date;
-            document.getElementById('expectedResolveDate').textContent = 
-                expectedDate ? new Date(expectedDate).toLocaleDateString() : '-';
-        }
-
-        UIUtils.showNotification('Microdeposit test completed!', 'success');
-    }
-
     async copyRawResponse() {
         if (this.rawResponseData) {
             const success = await UIUtils.copyToClipboard(JSON.stringify(this.rawResponseData, null, 2));
@@ -420,16 +304,8 @@ class AuthTester {
         document.getElementById('verificationStatus').textContent = '-';
         document.getElementById('availableBalance').textContent = '-';
         document.getElementById('currentBalance').textContent = '-';
-
-        // Clear microdeposit data
-        document.getElementById('verificationMethod').textContent = '-';
-        document.getElementById('microDepositStatus').textContent = '-';
-        document.getElementById('attemptsRemaining').textContent = '-';
         document.getElementById('expectedResolveDate').textContent = '-';
-
-        // Hide microdeposit section
-        UIUtils.toggleElement('microDepositSection', false);
-
+        
         // Clear raw response
         document.getElementById('rawResponse').textContent = '// API response will appear here after testing';
         this.rawResponseData = null;
@@ -447,14 +323,6 @@ function loadAccounts() {
 
 function testAuthGet() {
     window.authTester.testAuthGet();
-}
-
-function testMicrodeposits() {
-    window.authTester.testMicrodeposits();
-}
-
-function verifyMicrodeposits() {
-    window.authTester.verifyMicrodeposits();
 }
 
 function copyRawResponse() {
