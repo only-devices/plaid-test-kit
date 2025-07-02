@@ -27,31 +27,11 @@ const PLAID_PRODUCTS = [
         name: 'Income',
         description: 'Access to income verification data'
     },
-    /*{
     {
         id: 'investments',
         name: 'Investments',
         description: 'Access to investment account data and holdings'
-    },
-        id: 'liabilities',
-        name: 'Liabilities',
-        description: 'Access to liability accounts like credit cards and loans'
-    },
-    {
-        id: 'payment_initiation',
-        name: 'Payment Initiation',
-        description: 'Ability to initiate payments (UK/EU only)'
-    },
-    {
-        id: 'deposit_switch',
-        name: 'Deposit Switch',
-        description: 'Enable users to switch their direct deposit'
-    },
-    {
-        id: 'standing_orders',
-        name: 'Standing Orders',
-        description: 'Access to standing orders (UK only)'
-    }*/
+    }
 ];
 
 class LinkTokenConfig {
@@ -73,7 +53,9 @@ class LinkTokenConfig {
             products: ['auth'],
             optional_products: [],
             required_if_supported_products: [],
+            additional_consented_products: [], // NEW: Add support for additional consented products
             client_name: 'Plaid Test Kit',
+            link_customization_name: '', // NEW: Add support for link customization name
             country_codes: ['US'],
             language: 'en',
             user: {
@@ -133,6 +115,7 @@ class LinkTokenConfig {
     updateUIFromConfig() {
         // Update basic inputs
         document.getElementById('clientName').value = this.config.client_name || 'Plaid Test Kit';
+        document.getElementById('linkCustomizationName').value = this.config.link_customization_name || '';
         document.getElementById('language').value = this.config.language || 'en';
 
         // Update country checkboxes
@@ -146,6 +129,11 @@ class LinkTokenConfig {
 
     renderProductsTable() {
         const tbody = document.getElementById('productsTableBody');
+        if (!tbody) {
+            console.error('Products table body not found');
+            return;
+        }
+        
         tbody.innerHTML = '';
 
         PLAID_PRODUCTS.forEach(product => {
@@ -163,6 +151,9 @@ class LinkTokenConfig {
                 </td>
                 <td style="text-align: center;">
                     <input type="checkbox" class="product-checkbox product-required-if-supported" data-product="${product.id}" ${this.config.required_if_supported_products.includes(product.id) ? 'checked' : ''}>
+                </td>
+                <td style="text-align: center;">
+                    <input type="checkbox" class="product-checkbox product-additional-consented" data-product="${product.id}" ${this.config.additional_consented_products.includes(product.id) ? 'checked' : ''}>
                 </td>
             `;
             tbody.appendChild(row);
@@ -183,6 +174,8 @@ class LinkTokenConfig {
                 this.handleProductOptional(e.target);
             } else if (e.target.matches('.product-required-if-supported')) {
                 this.handleProductRequiredIfSupported(e.target);
+            } else if (e.target.matches('.product-additional-consented')) {
+                this.handleProductAdditionalConsented(e.target); // NEW: Handle additional consented products
             } else if (e.target.matches('.country-checkbox')) {
                 this.updateCountryCodes();
             }
@@ -191,6 +184,11 @@ class LinkTokenConfig {
         // Basic config inputs
         document.getElementById('clientName').addEventListener('input', () => {
             this.config.client_name = document.getElementById('clientName').value;
+            this.updatePreview();
+        });
+
+        document.getElementById('linkCustomizationName').addEventListener('input', () => {
+            this.config.link_customization_name = document.getElementById('linkCustomizationName').value;
             this.updatePreview();
         });
 
@@ -235,57 +233,100 @@ class LinkTokenConfig {
         this.updatePreview();
     }
 
+    // Helper method to remove product from all arrays except the specified one
+    removeProductFromAllArraysExcept(product, exceptArray) {
+        if (exceptArray !== 'products') {
+            this.config.products = this.config.products.filter(p => p !== product);
+        }
+        if (exceptArray !== 'optional_products') {
+            this.config.optional_products = this.config.optional_products.filter(p => p !== product);
+        }
+        if (exceptArray !== 'required_if_supported_products') {
+            this.config.required_if_supported_products = this.config.required_if_supported_products.filter(p => p !== product);
+        }
+        if (exceptArray !== 'additional_consented_products') {
+            this.config.additional_consented_products = this.config.additional_consented_products.filter(p => p !== product);
+        }
+    }
+
+    // Helper method to update all checkboxes for a product based on current config
+    updateProductCheckboxes(product) {
+        document.querySelector(`.product-include[data-product="${product}"]`).checked = this.config.products.includes(product);
+        document.querySelector(`.product-optional[data-product="${product}"]`).checked = this.config.optional_products.includes(product);
+        document.querySelector(`.product-required-if-supported[data-product="${product}"]`).checked = this.config.required_if_supported_products.includes(product);
+        document.querySelector(`.product-additional-consented[data-product="${product}"]`).checked = this.config.additional_consented_products.includes(product);
+    }
+
     handleProductInclude(checkbox) {
         const product = checkbox.dataset.product;
         if (checkbox.checked) {
+            // Remove from all other arrays and add to products
+            this.removeProductFromAllArraysExcept(product, 'products');
             if (!this.config.products.includes(product)) {
                 this.config.products.push(product);
             }
         } else {
+            // Remove from products array
             this.config.products = this.config.products.filter(p => p !== product);
-            // Also remove from optional and required_if_supported
-            this.config.optional_products = this.config.optional_products.filter(p => p !== product);
-            this.config.required_if_supported_products = this.config.required_if_supported_products.filter(p => p !== product);
-            // Update the checkboxes
-            document.querySelector(`.product-optional[data-product="${product}"]`).checked = false;
-            document.querySelector(`.product-required-if-supported[data-product="${product}"]`).checked = false;
         }
+        
+        // Update all checkboxes for this product
+        this.updateProductCheckboxes(product);
         this.updatePreview();
     }
 
     handleProductOptional(checkbox) {
         const product = checkbox.dataset.product;
         if (checkbox.checked) {
-            // Ensure product is included first
-            const includeCheckbox = document.querySelector(`.product-include[data-product="${product}"]`);
-            if (!includeCheckbox.checked) {
-                includeCheckbox.checked = true;
-                this.config.products.push(product);
-            }
+            // Remove from all other arrays and add to optional_products
+            this.removeProductFromAllArraysExcept(product, 'optional_products');
             if (!this.config.optional_products.includes(product)) {
                 this.config.optional_products.push(product);
             }
         } else {
+            // Remove from optional_products array
             this.config.optional_products = this.config.optional_products.filter(p => p !== product);
         }
+        
+        // Update all checkboxes for this product
+        this.updateProductCheckboxes(product);
         this.updatePreview();
     }
 
     handleProductRequiredIfSupported(checkbox) {
         const product = checkbox.dataset.product;
         if (checkbox.checked) {
-            // Ensure product is included first
-            const includeCheckbox = document.querySelector(`.product-include[data-product="${product}"]`);
-            if (!includeCheckbox.checked) {
-                includeCheckbox.checked = true;
-                this.config.products.push(product);
-            }
+            // Remove from all other arrays and add to required_if_supported_products
+            this.removeProductFromAllArraysExcept(product, 'required_if_supported_products');
             if (!this.config.required_if_supported_products.includes(product)) {
                 this.config.required_if_supported_products.push(product);
             }
         } else {
+            // Remove from required_if_supported_products array
             this.config.required_if_supported_products = this.config.required_if_supported_products.filter(p => p !== product);
         }
+        
+        // Update all checkboxes for this product
+        this.updateProductCheckboxes(product);
+        this.updatePreview();
+    }
+
+    // Handle additional consented products with mutual exclusivity
+    handleProductAdditionalConsented(checkbox) {
+        const product = checkbox.dataset.product;
+        if (checkbox.checked) {
+            // Remove from all other arrays and add to additional_consented_products
+            this.removeProductFromAllArraysExcept(product, 'additional_consented_products');
+            if (!this.config.additional_consented_products.includes(product)) {
+                this.config.additional_consented_products.push(product);
+            }
+        } else {
+            // Remove from additional_consented_products array
+            this.config.additional_consented_products = this.config.additional_consented_products.filter(p => p !== product);
+        }
+        
+        // Update all checkboxes for this product
+        this.updateProductCheckboxes(product);
         this.updatePreview();
     }
 
@@ -297,9 +338,11 @@ class LinkTokenConfig {
 
     populateJSONFromConfig() {
         const jsonConfig = { ...this.config };
-        // Remove empty arrays to keep JSON clean
+        // Remove empty arrays and empty strings to keep JSON clean
         if (jsonConfig.optional_products.length === 0) delete jsonConfig.optional_products;
         if (jsonConfig.required_if_supported_products.length === 0) delete jsonConfig.required_if_supported_products;
+        if (jsonConfig.additional_consented_products.length === 0) delete jsonConfig.additional_consented_products;
+        if (!jsonConfig.link_customization_name || jsonConfig.link_customization_name.trim() === '') delete jsonConfig.link_customization_name;
 
         document.getElementById('jsonConfig').value = JSON.stringify(jsonConfig, null, 2);
         this.validateAndUpdateJSON();
@@ -336,9 +379,11 @@ class LinkTokenConfig {
     getBasicConfig() {
         const config = { ...this.config };
 
-        // Clean up empty arrays
+        // Clean up empty arrays and empty strings
         if (config.optional_products.length === 0) delete config.optional_products;
         if (config.required_if_supported_products.length === 0) delete config.required_if_supported_products;
+        if (config.additional_consented_products.length === 0) delete config.additional_consented_products;
+        if (!config.link_customization_name || config.link_customization_name.trim() === '') delete config.link_customization_name;
 
         return config;
     }
@@ -371,7 +416,9 @@ class LinkTokenConfig {
             }
 
             // Save to localStorage with consistent keys
-            const configName = `Applied Config (${finalConfig.products.join(', ')})`;
+            const productsList = finalConfig.products.join(', ');
+            const additionalConsentedList = finalConfig.additional_consented_products ? ` + ${finalConfig.additional_consented_products.join(', ')} (additional)` : '';
+            const configName = `Applied Config (${productsList}${additionalConsentedList})`;
             localStorage.setItem('plaid_link_config', JSON.stringify(finalConfig));
             localStorage.setItem('plaid_link_config_name', configName);
 
@@ -430,6 +477,7 @@ class LinkTokenConfig {
             document.getElementById('advancedToggle').classList.remove('active');
             document.getElementById('advancedSection').classList.add('disabled-section');
             document.getElementById('clientName').value = this.config.client_name;
+            document.getElementById('linkCustomizationName').value = this.config.link_customization_name || '';
             document.getElementById('language').value = this.config.language;
 
             // Reset country checkboxes

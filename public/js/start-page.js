@@ -163,12 +163,16 @@ class StartPage {
             const summary = document.getElementById('configSummary');
             const productCount = this.customConfig.products ? this.customConfig.products.length : 0;
             const countryCount = this.customConfig.country_codes ? this.customConfig.country_codes.length : 0;
+            
+            // NEW: Include additional consented products in summary
+            const additionalConsentedCount = this.customConfig.additional_consented_products ? this.customConfig.additional_consented_products.length : 0;
+            const additionalText = additionalConsentedCount > 0 ? ` + ${additionalConsentedCount} additional consented` : '';
 
             // Check if this is from localStorage
             const storedConfig = this.getStoredConfiguration();
             const configName = storedConfig ? this.getStoredConfigurationName() : 'Server Configuration';
 
-            summary.textContent = `${configName} - ${productCount} product(s) and ${countryCount} country code(s)`;
+            summary.textContent = `${configName} - ${productCount} product(s)${additionalText} and ${countryCount} country code(s)`;
         }
     }
 
@@ -186,12 +190,18 @@ class StartPage {
             const configSource = storedConfig ? 'Local Storage' : 'Server';
             const configName = storedConfig ? this.getStoredConfigurationName() : 'Custom Server Config';
 
+            // NEW: Handle additional consented products display
+            const additionalConsentedProducts = displayConfig.additional_consented_products;
+            const hasAdditionalConsented = additionalConsentedProducts && additionalConsentedProducts.length > 0;
+            const additionalConsentedList = hasAdditionalConsented ? additionalConsentedProducts.join(', ') : '';
+
             statusEl.innerHTML = `
                 <div style="padding: 12px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 8px; border-left: 3px solid #10b981;">
                     <div style="font-size: 13px; color: #047857;">
                         <div style="margin-bottom: 8px;"><strong>Configuration:</strong> ${configName}</div>
                         <div style="margin-bottom: 4px;"><strong>Source:</strong> ${configSource}</div>
                         <div style="margin-bottom: 4px;"><strong>Products:</strong> ${productsList}</div>
+                        ${hasAdditionalConsented ? `<div style="margin-bottom: 4px;"><strong>Additional Consented:</strong> ${additionalConsentedList}</div>` : ''}
                         <div style="margin-bottom: 4px;"><strong>Countries:</strong> ${countriesList}</div>
                         <div><strong>Client:</strong> ${displayConfig.client_name || 'Plaid Test Kit'}</div>
                     </div>
@@ -714,6 +724,8 @@ class StartPage {
                 client_name: 'Plaid Test Kit - ABI (Auth, Balance, Identity)',
                 country_codes: ['US'],
                 language: 'en'
+                // NEW: Example of adding additional consented products to a preset
+                // additional_consented_products: ['assets', 'income']
             }
         };
 
@@ -867,6 +879,7 @@ class StartPage {
         // Hide other sections
         UIUtils.toggleElement('embeddedContainer', false);
         UIUtils.toggleElement('updateModeCard', false);
+        UIUtils.toggleElement('hostedLinkCard', false);
 
         // Show success section
         UIUtils.toggleElement('successSection', true);
@@ -874,6 +887,13 @@ class StartPage {
         // Update connection info
         const connectionInfo = document.getElementById('connectionInfo');
         const configUsed = this.customConfig ? 'Custom' : 'Default';
+
+        // NEW: Display additional consented products if present
+        const mainProducts = this.customConfig?.products?.join(', ') || 'auth';
+        const additionalProducts = this.customConfig?.additional_consented_products;
+        const productsDisplay = additionalProducts && additionalProducts.length > 0 
+            ? `${mainProducts} + ${additionalProducts.join(', ')} (additional)`
+            : mainProducts;
 
         connectionInfo.innerHTML = `
             <div class="grid grid-2">
@@ -893,7 +913,7 @@ class StartPage {
                     <strong>Accounts:</strong> ${metadata.accounts?.length || 0} connected
                 </div>
                 <div>
-                    <strong>Products:</strong> ${this.customConfig?.products?.join(', ') || 'identity'}
+                    <strong>Products:</strong> ${productsDisplay}
                 </div>
             </div>
         `;
@@ -911,6 +931,7 @@ class StartPage {
         UIUtils.clearStatus('globalStatus');
         UIUtils.clearStatus('embeddedStatus');
         UIUtils.clearStatus('updateStatus');
+        UIUtils.clearStatus('hostedLinkStatus');
     }
 
     async copyAccessToken() {
