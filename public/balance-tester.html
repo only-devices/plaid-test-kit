@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plaid Test Kit - Auth APIs</title>
+    <title>Plaid Test Kit - Balance APIs</title>
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -11,16 +11,16 @@
         <a href="/" class="navbar-brand">
             <img src="/assets/symbol-holo.png" alt="Plaid logo">
             <div>
-                <div class="navbar-title">Auth APIs</div>
-                <div class="navbar-subtitle">Test the /auth/get endpoint</div>
+                <div class="navbar-title">Balance APIs</div>
+                <div class="navbar-subtitle">Test the /accounts/balance/get endpoint</div>
             </div>
         </a>
         <nav class="navbar-nav">
             <a href="/" class="nav-link">Home</a>
             <a href="/link-config.html" class="nav-link">Link Config</a>
-            <a href="/auth-tester.html" class="nav-link active">Auth</a>
+            <a href="/auth-tester.html" class="nav-link">Auth</a>
             <a href="/identity-tester.html" class="nav-link">Identity</a>
-            <a href="/balance-tester.html" class="nav-link">Balance</a>
+            <a href="/balance-tester.html" class="nav-link active">Balance</a>
         </nav>
     </div>
 
@@ -48,7 +48,7 @@
     <div class="grid grid-2">
         <!-- Controls Column -->
         <div class="card">
-            <h3>Auth Testing Controls</h3>
+            <h3>Balance Testing Controls</h3>
             
             <div class="form-group">
                 <label for="accountSelect">Select Account:</label>
@@ -58,7 +58,7 @@
             </div>
 
             <div class="form-group">
-                <button class="btn btn-primary btn-full" onclick="testAuthGet()">Get Account & Routing Numbers</button>
+                <button class="btn btn-primary btn-full" onclick="testBalanceGet()">Get Account Balance</button>
             </div>
 
             <h3>Raw API Response</h3>
@@ -68,47 +68,27 @@
             <button class="btn btn-outline mt-1" onclick="copyRawResponse()" style="margin-top: 8px;">Copy Response</button>
 
             <div class="form-group">
-                <h4>ACH Information</h4>
+                <h4>Balance Information</h4>
                 <div style="background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 13px; color: #475569;">
-                    <p style="margin: 0 0 8px 0;"><strong>Important:</strong> Auth data is used for ACH transfers.</p>
-                    <p style="margin: 0;"><strong>Security:</strong> Never log or display account numbers in production.</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Available Balance:</strong> Funds available for immediate use.</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Current Balance:</strong> Total balance including pending transactions.</p>
+                    <p style="margin: 0;"><strong>Limit:</strong> Credit limit for credit accounts (if applicable).</p>
                 </div>
             </div>
         </div>
         
         <!-- Results Column -->
         <div class="card">
-            <h3>Auth /get Output</h3>
+            <h3>Balance /get Output</h3>
             
             <div class="form-group">
                 <label>Account ID:</label>
-                <div class="result-field" id="accountId" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">Click "Get Account & Routing Numbers" to retrieve
-                </div>
+                <div class="result-field" id="accountId" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">Click "Get Account Balance" to retrieve</div>
             </div>
             
             <div class="form-group">
                 <label>Account Name:</label>
                 <div class="result-field" id="accountName" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">-</div>
-            </div>
-            
-            <div class="form-group">
-                <label>Account Mask:</label>
-                <div class="result-field" id="accountMask" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">-</div>
-            </div>
-            
-            <div class="form-group">
-                <label>Account Number:</label>
-                <div class="result-field" id="accountNumber" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">-</div>
-            </div>
-            
-            <div class="form-group">
-                <label>Routing Number:</label>
-                <div class="result-field" id="routingNumber" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">-</div>
-            </div>
-
-            <div class="form-group">
-                <label>Wire Routing Number:</label>
-                <div class="result-field" id="wireRoutingNumber" style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">-</div>
             </div>
             
             <div class="form-group">
@@ -123,12 +103,27 @@
 
             <div class="form-group">
                 <label>Available Balance:</label>
-                <div class="result-field" id="availableBalance">-</div>
+                <div class="result-field" id="availableBalance" style="font-size: 18px; font-weight: 600; color: #10b981;">-</div>
             </div>
 
             <div class="form-group">
                 <label>Current Balance:</label>
-                <div class="result-field" id="currentBalance">-</div>
+                <div class="result-field" id="currentBalance" style="font-size: 18px; font-weight: 600; color: #0ea5e9;">-</div>
+            </div>
+
+            <div class="form-group">
+                <label>Credit Limit:</label>
+                <div class="result-field" id="creditLimit">-</div>
+            </div>
+
+            <div class="form-group">
+                <label>Currency:</label>
+                <div class="result-field" id="currency">-</div>
+            </div>
+
+            <div class="form-group">
+                <label>Last Updated:</label>
+                <div class="result-field" id="lastUpdated">-</div>
             </div>
         </div>
     </div>
@@ -137,6 +132,6 @@
     <script src="/js/api-client.js"></script>
     <script src="/js/ui-utils.js"></script>
     <script src="/js/account-manager.js"></script>
-    <script src="/js/auth-tester.js"></script>
+    <script src="/js/balance-tester.js"></script>
 </body>
 </html>

@@ -54,6 +54,10 @@ app.get('/auth-tester.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'auth-tester.html'));
 });
 
+app.get('/balance-tester.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'balance-tester.html'));
+});
+
 app.get('/link-config.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'link-config.html'));
 });
@@ -698,6 +702,83 @@ app.post('/api/test-auth', async (req, res) => {
   }
 });
 
+// Test Balance endpoints
+app.post('/api/test-balance', async (req, res) => {
+  try {
+    if (!accessToken) {
+      return res.status(400).json({ error: 'No access token available. Please exchange a public token first.' });
+    }
+
+    const { account_index } = req.body;
+
+    // First, get all accounts to find the selected account ID
+    const accountsResponse = await plaidClient.accountsGet({
+      access_token: accessToken,
+    });
+
+    if (!accountsResponse.data.accounts || accountsResponse.data.accounts.length === 0) {
+      throw new Error('No accounts found');
+    }
+
+    // Use the selected account index, default to 0 if not provided
+    const selectedIndex = account_index !== undefined ? parseInt(account_index) : 0;
+    
+    if (selectedIndex >= accountsResponse.data.accounts.length) {
+      throw new Error(`Selected account index ${selectedIndex} is out of range`);
+    }
+
+    const selectedAccount = accountsResponse.data.accounts[selectedIndex];
+    const selectedAccountId = selectedAccount.account_id;
+
+    // Call Balance API with account filtering
+    const balanceResponse = await plaidClient.accountsBalanceGet({
+      access_token: accessToken,
+      options: {
+        account_ids: [selectedAccountId]
+      }
+    });
+
+    // Check if accounts exist in response
+    if (!balanceResponse.data.accounts || balanceResponse.data.accounts.length === 0) {
+      throw new Error('No accounts found in balance/get response');
+    }
+
+    // Since we filtered by account ID, we should only have one account
+    const balanceAccount = balanceResponse.data.accounts[0];
+
+    res.json({
+      success: true,
+      selected_account: {
+        index: selectedIndex,
+        name: selectedAccount.name,
+        official_name: selectedAccount.official_name,
+        account_id: selectedAccount.account_id,
+        type: selectedAccount.type,
+        subtype: selectedAccount.subtype
+      },
+      balance_data: {
+        available: balanceAccount.balances?.available || null,
+        current: balanceAccount.balances?.current || null,
+        limit: balanceAccount.balances?.limit || null,
+        iso_currency_code: balanceAccount.balances?.iso_currency_code || null,
+        unofficial_currency_code: balanceAccount.balances?.unofficial_currency_code || null,
+        last_updated_datetime: balanceAccount.balances?.last_updated_datetime || null
+      },
+      item_id: balanceResponse.data.item?.item_id || null,
+      request_id: balanceResponse.data.request_id,
+      // Include full Plaid API response for display on-screen
+      raw_response: balanceResponse.data
+    });
+
+  } catch (error) {
+    console.error('Balance API error:', error);
+    res.status(500).json({ 
+      error: 'Failed to test balance endpoint', 
+      details: error.response?.data || error.message 
+    });
+  }
+});
+
 // Clear access token
 app.post('/api/clear-token', async (req, res) => {
   try {
@@ -740,6 +821,7 @@ app.listen(PORT, () => {
   console.log('  GET  /                      - Start page (Link selection)');
   console.log('  GET  /identity-tester.html  - Identity API testing page');
   console.log('  GET  /auth-tester.html      - Auth API testing page');
+  console.log('  GET  /balance-tester.html   - Balance API testing page');
   console.log('  GET  /link-config.html      - Link token configuration page');
   console.log('  POST /api/create-link-token - Create Link token');
   console.log('  POST /api/exchange-token    - Exchange public token');
@@ -751,5 +833,6 @@ app.listen(PORT, () => {
   console.log('  POST /api/get-accounts      - Get available accounts');
   console.log('  POST /api/test-identity     - Test Identity APIs');
   console.log('  POST /api/test-auth         - Test Auth API');
+  console.log('  POST /api/test-balance      - Test Balance API');
   console.log('  GET  /health               - Health check');
 });

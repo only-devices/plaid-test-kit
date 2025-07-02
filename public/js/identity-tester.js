@@ -2,8 +2,6 @@
 
 class IdentityTester {
     constructor() {
-        this.hasAccessToken = false;
-        this.currentToken = null;
         this.rawResponseData = null;
         this.init();
     }
@@ -15,196 +13,12 @@ class IdentityTester {
             this.testIdentityAPIs();
         });
 
-        // Check if server has existing token
-        this.checkExistingToken();
-    }
-
-    async checkExistingToken() {
-        try {
-            const health = await window.apiClient.getHealth();
-            if (health.hasAccessToken) {
-                this.hasAccessToken = true;
-                this.currentToken = health.access_token || '(server token)';
-                this.showExistingTokenBanner();
-                
-                // Auto-load accounts
-                this.loadAccounts();
-            } else {
-                UIUtils.showStatus('tokenStatus', 'No access token available. Please enter one or connect via Link.', 'info');
-            }
-        } catch (error) {
-            console.log('Health check failed:', error);
-            UIUtils.showStatus('tokenStatus', 'Please enter an access token to begin testing', 'info');
-        }
-    }
-
-    showExistingTokenBanner() {
-        // Create or update existing token banner
-        let banner = document.getElementById('existingTokenBanner');
-        if (!banner) {
-            banner = document.createElement('div');
-            banner.id = 'existingTokenBanner';
-            banner.className = 'card';
-            banner.style.backgroundColor = '#e3f2fd';
-            banner.style.borderLeft = '4px solid #2196f3';
-            
-            // Insert after header
-            const header = document.querySelector('.header');
-            if (header && header.parentNode) {
-                header.parentNode.insertBefore(banner, header.nextSibling);
-            } else {
-                // Fallback: append to body or another container
-                document.body.prepend(banner);
-            }
-        }
-
-        banner.innerHTML = `
-            <div class="grid grid-2">
-                <div>
-                    <h4 style="margin: 0;">An access token has been set</h4>
-                    <p style="margin: 5px 0 0 0; color: #666;">Ready to test. Or, start over with a new connection.</p>
-                </div>
-                <div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end;">
-                    <button class="btn btn-outline" onclick="copyExistingToken()">Copy Token</button>
-                    <button class="btn btn-secondary" onclick="clearTokenAndStartOver()">Start Over</button>
-                </div>
-            </div>
-        `;
-
-        UIUtils.showStatus('tokenStatus', 'Access token set - ready to test APIs', 'success');
-    }
-
-    async copyExistingToken() {
-        try {
-            const health = await window.apiClient.getHealth();
-            if (health.access_token) {
-                const success = await UIUtils.copyToClipboard(health.access_token);
-                if (success) {
-                    UIUtils.showNotification('Access token copied to clipboard!', 'success');
-                } else {
-                    UIUtils.showNotification('Failed to copy token', 'error');
-                }
-            } else {
-                UIUtils.showNotification('No token available', 'error');
-            }
-        } catch (error) {
-            UIUtils.showNotification('Failed to retrieve token', 'error');
-            console.error('Copy token error:', error);
-        }
-    }
-
-    async clearTokenAndStartOver() {
-        try {
-            // Clear token on server
-            await window.apiClient.clearToken();
-            
-            // Remove the banner
-            const banner = document.getElementById('existingTokenBanner');
-            if (banner) {
-                banner.remove();
-            }
-            
-            // Reset local state
-            this.hasAccessToken = false;
-            this.currentToken = null;
-            this.rawResponseData = null;
-            
-            // Clear UI elements
-            UIUtils.toggleElement('currentTokenDisplay', false);
-            UIUtils.showStatus('tokenStatus', 'Access token cleared. Please enter a new token or connect via Link.', 'info');
-            
-            // Clear accounts and results
-            const accountSelect = document.getElementById('accountSelect');
-            UIUtils.populateSelect(accountSelect, [], 'Load accounts first...');
-            this.clearResults();
-            
-            UIUtils.showNotification('Access token cleared - redirecting to start page...', 'success');
-            
-            // Redirect to start page after a short delay
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 1500);
-            
-        } catch (error) {
-            UIUtils.showNotification('Failed to clear token', 'error');
-            console.error('Clear token error:', error);
-        }
-    }
-
-    async setAccessToken() {
-        const tokenInput = document.getElementById('accessTokenInput');
-        const accessToken = tokenInput.value.trim();
-        
-        if (!accessToken) {
-            UIUtils.showStatus('tokenStatus', 'Please enter an access token', 'error');
-            return;
-        }
-
-        try {
-            
-            const response = await window.apiClient.setAccessToken(accessToken);
-            
-            if (response.success) {
-                this.hasAccessToken = true;
-                this.currentToken = accessToken;
-                
-                // Auto-load accounts
-                this.loadAccounts();
-                // Display existing token banner
-                this.showExistingTokenBanner();
-            } else {
-                throw new Error(response.error);
-            }
-        } catch (error) {
-            UIUtils.showStatus('tokenStatus', `Error: ${error.message}`, 'error');
-        }
-    }
-
-    async loadAccounts(event) {
-        if (!this.hasAccessToken) {
-            UIUtils.showStatus('apiStatus', 'Please set an access token first', 'error');
-            return;
-        }
-
-        try {            
-            const response = await window.apiClient.getAccounts();
-            
-            if (response.success) {
-                this.populateAccountSelect(response.accounts);
-                
-                const count = response.accounts.length;
-                UIUtils.showStatus('apiStatus', `✅ Loaded ${count} account${count !== 1 ? 's' : ''}`, 'success');
-
-                if (document.getElementById('setTokenButton')) {
-
-                    UIUtils.setButtonLoading(document.getElementById('setTokenButton'), true, 'Token Set & Accounts Loaded');
-                }
-            } else {
-                throw new Error(response.error);
-            }
-        } catch (error) {
-            UIUtils.showStatus('apiStatus', `❌ Error loading accounts: ${error.message}`, 'error');
-        }
-    }
-
-    populateAccountSelect(accounts) {
-        const accountSelect = document.getElementById('accountSelect');
-        
-        if (!accounts || accounts.length === 0) {
-            UIUtils.populateSelect(accountSelect, [], 'No accounts found');
-            return;
-        }
-
-        const options = accounts.map(account => ({
-            value: account.index,
-            text: UIUtils.formatAccountName(account)
-        }));
-
-        UIUtils.populateSelect(accountSelect, options, 'Select an account...');
+        // Check if server has existing token and load accounts
+        window.accountManager.checkExistingToken();
     }
 
     async testIdentityAPIs() {
-        if (!this.hasAccessToken) {
+        if (!window.accountManager.hasAccessToken) {
             UIUtils.showStatus('apiStatus', 'Please set an access token first', 'error');
             return;
         }
@@ -332,22 +146,22 @@ class IdentityTester {
         });
     }
 
-async copyRawResponse(key) {
-    if (this.rawResponseData) {
-        let dataToCopy = this.rawResponseData;
-        if (key && this.rawResponseData.hasOwnProperty(key)) {
-            dataToCopy = this.rawResponseData[key];
-        }
-        const success = await UIUtils.copyToClipboard(JSON.stringify(dataToCopy, null, 2));
-        if (success) {
-            UIUtils.showNotification('Response copied to clipboard!', 'success');
+    async copyRawResponse(key) {
+        if (this.rawResponseData) {
+            let dataToCopy = this.rawResponseData;
+            if (key && this.rawResponseData.hasOwnProperty(key)) {
+                dataToCopy = this.rawResponseData[key];
+            }
+            const success = await UIUtils.copyToClipboard(JSON.stringify(dataToCopy, null, 2));
+            if (success) {
+                UIUtils.showNotification('Response copied to clipboard!', 'success');
+            } else {
+                UIUtils.showNotification('Failed to copy response', 'error');
+            }
         } else {
-            UIUtils.showNotification('Failed to copy response', 'error');
+            UIUtils.showNotification('No response data available', 'error');
         }
-    } else {
-        UIUtils.showNotification('No response data available', 'error');
     }
-}
 
     // Helper method to pre-fill form with sample data
     fillSampleData() {
@@ -363,29 +177,14 @@ async copyRawResponse(key) {
 }
 
 // Global functions for onclick handlers
-function setAccessToken() {
-    window.identityTester.setAccessToken();
-}
-
-function loadAccounts() {
-    window.identityTester.loadAccounts();
-}
-
-function copyExistingToken() {
-    window.identityTester.copyExistingToken();
-}
-
 function copyRawResponse() {
     window.identityTester.copyRawResponse();
-}
-
-function clearTokenAndStartOver() {
-    window.identityTester.clearTokenAndStartOver();
 }
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.identityTester = new IdentityTester();
+    window.pageTester = window.identityTester; // For account manager integration
     
     // Add keyboard shortcut for sample data (Ctrl+D)
     document.addEventListener('keydown', (e) => {
