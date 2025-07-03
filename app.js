@@ -691,6 +691,8 @@ let customLinkConfig = null;
 // Create link token for Plaid Link with custom configuration support
 app.post('/api/create-link-token', async (req, res) => {
   try {
+    const plaidClient = createPlaidClient(req);
+
     const {
       update_mode,
       access_token,
@@ -853,6 +855,7 @@ app.post('/api/clear-link-config', async (req, res) => {
 // Get link token details (for hosted link completion)
 app.post('/api/get-link-token', async (req, res) => {
   try {
+    const plaidClient = createPlaidClient(req);
     const { link_token } = req.body;
 
     if (!link_token) {
@@ -913,6 +916,7 @@ app.post('/api/get-link-token', async (req, res) => {
 // Exchange public_token for access_token
 app.post('/api/exchange-token', async (req, res) => {
   try {
+    const plaidClient = createPlaidClient(req);
     const { public_token } = req.body;
 
     if (!public_token) {
@@ -943,6 +947,7 @@ app.post('/api/exchange-token', async (req, res) => {
 // Set access token directly
 app.post('/api/set-token', async (req, res) => {
   try {
+    const plaidClient = createPlaidClient(req);
     const { access_token } = req.body;
 
     if (!access_token) {
@@ -984,6 +989,7 @@ app.post('/api/get-accounts', async (req, res) => {
       return res.status(400).json({ error: 'No access token available. Please exchange a public token first.' });
     }
 
+    const plaidClient = createPlaidClient(req);
     const response = await plaidClient.accountsGet({
       access_token: accessToken,
     });
@@ -1019,6 +1025,7 @@ app.post('/api/test-identity', async (req, res) => {
       return res.status(400).json({ error: 'No access token available. Please exchange a public token first.' });
     }
 
+    const plaidClient = createPlaidClient(req);
     const { name, email, phone, address, account_index } = req.body;
 
     // First, get all accounts to find the selected account ID
@@ -1145,6 +1152,7 @@ app.post('/api/test-auth', async (req, res) => {
       return res.status(400).json({ error: 'No access token available. Please exchange a public token first.' });
     }
 
+    const plaidClient = createPlaidClient(req);
     const { account_index } = req.body;
 
     // First, get all accounts to find the selected account ID
@@ -1231,6 +1239,7 @@ app.post('/api/test-balance', async (req, res) => {
       return res.status(400).json({ error: 'No access token available. Please exchange a public token first.' });
     }
 
+    const plaidClient = createPlaidClient(req);
     const { account_index } = req.body;
 
     // First, get all accounts to find the selected account ID
