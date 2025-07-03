@@ -147,12 +147,25 @@ p {
     font-weight: 500;
     font-size: 14px;
     border: 1px solid transparent;
+    cursor: pointer;
+}
+
+.navbar-nav .nav-logout {
+    background: rgba(175, 24, 24, 0.4);
+    color: white;
+    background: rgba(175, 24, 24, 0.5);
 }
 
 .navbar-nav .nav-link:hover {
     background: rgba(99, 102, 241, 0.1);
     color: var(--plaid-purple);
     border-color: rgba(99, 102, 241, 0.2);
+}
+
+.navbar-nav .nav-logout:hover {
+    background: rgba(175, 24, 24, 0.7);
+    color: white;
+    background: rgba(175, 24, 24, 0.8);
 }
 
 .navbar-nav .nav-link.active {
@@ -182,6 +195,7 @@ p {
 
 .grid-2 { grid-template-columns: 2fr 1fr; }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
 
 @media (max-width: 768px) {
     .grid-2, .grid-3 {
@@ -274,9 +288,10 @@ textarea:focus {
     text-decoration: none;
     text-align: center;
     transition: all 0.2s ease;
-    min-width: 140px;
+    min-width: 100px;
     font-family: var(--font-sans);
     letter-spacing: 0.25px;
+    margin-top: auto;
 }
 
 .btn:disabled {
@@ -339,7 +354,7 @@ textarea:focus {
 }
 
 .btn-full {
-    width: 100%;
+    width: 80%;
 }
 
 /* Status Messages */
@@ -501,6 +516,8 @@ textarea:focus {
 
 /* Feature Cards */
 .feature-card {
+    display: flex;
+    flex-direction: column;
     border: 2px solid var(--plaid-border);
     border-radius: var(--border-radius-lg);
     padding: 24px;
@@ -511,6 +528,8 @@ textarea:focus {
     background: white;
     position: relative;
     overflow: hidden;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .feature-card::before {

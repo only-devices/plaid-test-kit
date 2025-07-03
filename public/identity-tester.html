@@ -3,27 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plaid Test Kit - Identity APIs</title>
+    <title>Plaid Test Kit - Identity</title>
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-    <div class="navbar">
-        <a href="/" class="navbar-brand">
-            <img src="/assets/symbol-holo.png" alt="Plaid logo">
-            <div>
-                <div class="navbar-title">Identity APIs</div>
-                <div class="navbar-subtitle">Test the /identity/get and /identity/match endpoints</div>
-            </div>
-        </a>
-        <nav class="navbar-nav">
-            <a href="/" class="nav-link">Home</a>
-            <a href="/link-config.html" class="nav-link">Link Config</a>
-            <a href="/auth-tester.html" class="nav-link">Auth</a>
-            <a href="/identity-tester.html" class="nav-link active">Identity</a>
-            <a href="/balance-tester.html" class="nav-link">Balance</a>
-        </nav>
-    </div>
-
     <!-- Access Token Section -->
     <div class="card">
         <h3>Access Token</h3>
@@ -136,6 +119,7 @@
     <!-- Load JavaScript modules -->
     <script src="/js/api-client.js"></script>
     <script src="/js/ui-utils.js"></script>
+    <script src="/js/navbar.js"></script>
     <script src="/js/account-manager.js"></script>
     <script src="/js/identity-tester.js"></script>
 </body>
@@ -207,7 +191,7 @@
                     <input type="text" id="country" name="country" value="US">
                 </div>
                 
-                <button type="submit" class="btn btn-primary btn-full">Test Identity APIs</button>
+                <button type="submit" class="btn btn-primary btn-full">Test Identity</button>
             </form>
         </div>
         

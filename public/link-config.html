@@ -248,23 +248,6 @@
     </style>
 </head>
 <body>
-    <div class="navbar">
-        <a href="/" class="navbar-brand">
-            <img src="/assets/symbol-holo.png" alt="Plaid logo">
-            <div>
-                <div class="navbar-title">Link Configuration</div>
-                <div class="navbar-subtitle">Customize Link token parameters</div>
-            </div>
-        </a>
-        <nav class="navbar-nav">
-            <a href="/" class="nav-link">Home</a>
-            <a href="/link-config.html" class="nav-link active">Link Config</a>
-            <a href="/auth-tester.html" class="nav-link">Auth</a>
-            <a href="/identity-tester.html" class="nav-link">Identity</a>
-            <a href="/balance-tester.html" class="nav-link">Balance</a>
-        </nav>
-    </div>
-
     <!-- Status Display -->
     <div id="configStatus"></div>
 
@@ -344,7 +327,7 @@
                 <li><strong>Additional Consented:</strong> Products in <code>additional_consented_products</code> - products the user has consented to but may not be actively requested</li>
             </ul>
             <p style="margin: 8px 0 0 0; font-weight: 500; color: #dc2626;">
-                ⚠️ Note: Each product can only be checked in ONE column. Checking a different column will automatically uncheck the others.
+                ⚠️ Each product can only be checked in ONE column. Checking a different column will automatically uncheck the others.
             </p>
         </div>
 
@@ -432,6 +415,7 @@
     <!-- Load JavaScript modules -->
     <script src="/js/api-client.js"></script>
     <script src="/js/ui-utils.js"></script>
+    <script src="/js/navbar.js"></script>
     <script src="/js/link-config.js"></script>
 </body>
 </html>

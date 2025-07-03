@@ -10,23 +10,6 @@
 </head>
 
 <body>
-    <div class="navbar">
-        <a href="/" class="navbar-brand">
-            <img src="/assets/symbol-holo.png" alt="Plaid logo">
-            <div>
-                <div class="navbar-title">Test Kit</div>
-                <div class="navbar-subtitle">Welcome. Now go and test all the things!</div>
-            </div>
-        </a>
-        <nav class="navbar-nav">
-            <a href="/" class="nav-link active">Home</a>
-            <a href="/link-config.html" class="nav-link">Link Config</a>
-            <a href="/auth-tester.html" class="nav-link">Auth</a>
-            <a href="/identity-tester.html" class="nav-link">Identity</a>
-            <a href="/balance-tester.html" class="nav-link">Balance</a>
-        </nav>
-    </div>
-
     <!-- Status Display -->
     <div id="globalStatus"></div>
 
@@ -95,7 +78,7 @@
     <div class="card">
         <h2>2️⃣ Choose Your Link Experience</h2>
         <p>Select how you'd like to test Plaid Link. OAuth support is automatic based on the institution you select.</p>
-        <div class="grid grid-3">
+        <div class="grid grid-4">
             <div class="feature-card" onclick="startStandardLink()">
                 <h3>🔗 Standard Link</h3>
                 <p>Classic Link experience. Works with all institutions and OAuth flows.</p>
@@ -218,12 +201,6 @@
                 <h3>💰 Balance</h3>
                 <p>Test Balance /get endpoint for real-time account balance information</p>
                 <button class="btn btn-primary btn-full">Open Balance Tester</button>
-            </div>
-
-            <div class="feature-card" style="opacity: 0.6; cursor: not-allowed;">
-                <h3>📊 Transactions</h3>
-                <p>Test Transactions endpoints for account history and categorization (Coming soon)</p>
-                <button class="btn btn-secondary btn-full" disabled>Coming Soon</button>
             </div>
         </div>
     </div>

@@ -311,6 +311,122 @@ class UIUtils {
             }, 300);
         });
     }
+
+/**
+     * Logout user and redirect to auth page
+     * @param {Object} options - Logout options
+     * @param {boolean} options.confirm - Whether to show confirmation dialog
+     * @param {string} options.returnUrl - URL to redirect to after logout
+     * @param {string} options.message - Custom logout message
+     */
+    static async logout(options = {}) {
+        const {
+            confirm = true,
+            returnUrl = '/auth',
+            message = 'Are you sure you want to logout?'
+        } = options;
+
+        // Show confirmation dialog if requested
+        if (confirm && !window.confirm(message)) {
+            return false;
+        }
+
+        try {
+            // Show logout notification
+            UIUtils.showNotification('Logging out...', 'info', 2000);
+
+            // Call logout API
+            const response = await fetch('/api/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ returnUrl }),
+                credentials: 'same-origin'
+            });
+
+            if (response.ok) {
+                // Check if response is a redirect
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    // Manual redirect if needed
+                    window.location.href = returnUrl;
+                }
+                return true;
+            } else {
+                throw new Error('Logout request failed');
+            }
+        } catch (error) {
+            console.error('Logout failed:', error);
+            UIUtils.showNotification('Logout failed. Redirecting anyway...', 'warning');
+            
+            // Force redirect even if API call fails
+            setTimeout(() => {
+                window.location.href = returnUrl;
+            }, 1000);
+            
+            return false;
+        }
+    }
+
+    /**
+     * Check authentication status
+     * @returns {Promise<Object>} Authentication status object
+     */
+    static async checkAuthStatus() {
+        try {
+            const response = await fetch('/api/auth-status', {
+                credentials: 'same-origin'
+            });
+            
+            if (response.ok) {
+                return await response.json();
+            } else {
+                return { authenticated: false, error: 'Failed to check auth status' };
+            }
+        } catch (error) {
+            console.error('Auth status check failed:', error);
+            return { authenticated: false, error: error.message };
+        }
+    }
+
+    /**
+     * Add logout button to navigation
+     * @param {HTMLElement|string} container - Container element or selector
+     * @param {Object} options - Button options
+     */
+    static addLogoutButton(container, options = {}) {
+        const {
+            text = 'Logout',
+            className = 'nav-link nav-logout',
+            position = 'append' // 'append', 'prepend', or 'replace'
+        } = options;
+
+        const containerEl = typeof container === 'string' ? 
+            document.querySelector(container) : container;
+        
+        if (!containerEl) {
+            console.warn('Logout button container not found');
+            return null;
+        }
+
+        const logoutButton = document.createElement('button');
+        logoutButton.textContent = text;
+        logoutButton.className = className;
+        logoutButton.onclick = () => UIUtils.logout();
+
+        if (position === 'prepend') {
+            containerEl.prepend(logoutButton);
+        } else if (position === 'replace') {
+            containerEl.innerHTML = '';
+            containerEl.appendChild(logoutButton);
+        } else {
+            containerEl.appendChild(logoutButton);
+        }
+
+        return logoutButton;
+    }
 }
 
 // Export to global scope

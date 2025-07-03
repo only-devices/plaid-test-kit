@@ -4,231 +4,507 @@ const express = require('express');
 const { PlaidApi, PlaidEnvironments, Configuration, CountryCode } = require('plaid');
 const path = require('path');
 
+// 🔐 NEW: Security middleware dependencies
+const session = require('express-session');
+const cookieParser = require('cookie-parser');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// 1. BASIC MIDDLEWARE
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static file serving with proper MIME types
-app.use(express.static('public', {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
-    } else if (path.endsWith('.css')) {
-      res.setHeader('Content-Type', 'text/css');
-    }
+// 🔐 NEW: Session and cookie support
+app.use(cookieParser());
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
 
-// Plaid configuration
-const plaidConfig = new Configuration({
-  basePath: PlaidEnvironments.sandbox, // Using sandbox environment
-  baseOptions: {
-    headers: {
-      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.PLAID_SECRET,
+// 2. UTILITY FUNCTIONS
+// 🔐 FIXED: Modern encryption utilities for storing credentials securely
+const crypto = require('crypto');
+const fs = require('fs');
+
+// Generate a consistent encryption key from your ENCRYPTION_KEY env var
+function getEncryptionKey() {
+  const key = process.env.ENCRYPTION_KEY || 'default-key-change-this-in-production';
+  // Create a 32-byte key from the environment variable
+  return crypto.createHash('sha256').update(key).digest();
+}
+
+const ALGORITHM = 'aes-256-cbc';
+const IV_LENGTH = 16; // For AES, this is always 16
+
+function encryptCredentials(credentials) {
+  try {
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv(ALGORITHM, getEncryptionKey(), iv);
+    
+    let encrypted = cipher.update(JSON.stringify(credentials), 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    
+    // Return IV + encrypted data (separated by :)
+    return iv.toString('hex') + ':' + encrypted;
+  } catch (error) {
+    console.error('Encryption error:', error);
+    throw new Error('Failed to encrypt credentials');
+  }
+}
+
+function decryptCredentials(encryptedData) {
+  try {
+    const textParts = encryptedData.split(':');
+    const iv = Buffer.from(textParts.shift(), 'hex');
+    const encryptedText = textParts.join(':');
+    
+    const decipher = crypto.createDecipheriv(ALGORITHM, getEncryptionKey(), iv);
+    
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    
+    return JSON.parse(decrypted);
+  } catch (error) {
+    console.error('Decryption error:', error);
+    throw new Error('Failed to decrypt credentials - session may be corrupted');
+  }
+}
+
+// Helper function for error messages
+function getErrorMessage(error) {
+  const messages = {
+    'invalid': 'Invalid credentials or authentication failed',
+    'session_invalid': 'Session expired or corrupted. Please login again.',
+    'validation_failed': 'Unable to validate credentials with Plaid servers',
+    'format_error': 'Credential format is incorrect'
+  };
+  return messages[error] || 'Authentication failed';
+}
+
+// 🔐 UPDATED: Dynamic Plaid client creation with user's credentials
+const createPlaidClient = (req) => {
+  if (!req.plaidClientId || !req.plaidSecret) {
+    throw new Error('User credentials not available');
+  }
+
+  // Map environment string to Plaid environment
+  const plaidEnvironments = {
+    'sandbox': PlaidEnvironments.sandbox
+  };
+
+  // Determine environment from stored credentials
+  const encryptedCreds = req.session?.plaidCredentials || req.cookies?.plaidCredentials;
+  let environment = 'sandbox'; // default
+
+  if (encryptedCreds) {
+    try {
+      const credentials = decryptCredentials(encryptedCreds);
+      environment = credentials.environment || 'sandbox';
+    } catch (e) {
+      console.warn('Could not determine environment, using sandbox');
+    }
+  }
+
+  const plaidConfig = new Configuration({
+    basePath: plaidEnvironments[environment],
+    baseOptions: {
+      headers: {
+        'PLAID-CLIENT-ID': req.plaidClientId,
+        'PLAID-SECRET': req.plaidSecret,
+      },
     },
-  },
+  });
+
+  return new PlaidApi(plaidConfig);
+};
+
+// 🚀 NEW: Navbar generation function
+function generateNavbar(config = {}) {
+  const {
+    title = 'Test Kit',
+    subtitle = 'Welcome. Now go and test all the things!',
+    activeItem = 'home',
+    logoSrc = '/assets/symbol-holo.png'
+  } = config;
+
+  const navItems = [
+    { href: '/', text: 'Home', id: 'home' },
+    { href: '/link-config.html', text: 'Link Config', id: 'link-config' },
+    { href: '/auth-tester.html', text: 'Auth', id: 'auth' },
+    { href: '/identity-tester.html', text: 'Identity', id: 'identity' },
+    { href: '/balance-tester.html', text: 'Balance', id: 'balance' }
+  ];
+
+  const navItemsHTML = navItems.map(item => {
+    const activeClass = item.id === activeItem ? ' active' : '';
+    return `<a href="${item.href}" class="nav-link${activeClass}">${item.text}</a>`;
+  }).join('');
+
+  return `
+    <div class="navbar" id="appNavbar">
+      <a href="/" class="navbar-brand">
+        <img src="${logoSrc}" alt="Plaid logo">
+        <div>
+          <div class="navbar-title">${title}</div>
+          <div class="navbar-subtitle">${subtitle}</div>
+        </div>
+      </a>
+      <nav class="navbar-nav" id="navbarItems">
+        ${navItemsHTML}
+        <button class="nav-link nav-logout" onclick="UIUtils.logout()">
+          Logout
+        </button>
+      </nav>
+    </div>
+  `;
+}
+
+// 🚀 NEW: Enhanced page serving with navbar injection
+function sendPageWithNavbar(res, filePath, navbarConfig = {}) {
+  try {
+    // Read the HTML file
+    let htmlContent = fs.readFileSync(filePath, 'utf8');
+    
+    // Generate navbar HTML
+    const navbarHTML = generateNavbar(navbarConfig);
+    
+    // Insert navbar after <body> tag
+    htmlContent = htmlContent.replace(
+      /<body[^>]*>/i, 
+      `$&\n    ${navbarHTML}`
+    );
+    
+    res.send(htmlContent);
+  } catch (error) {
+    console.error('Error serving page with navbar:', error);
+    res.status(500).send('Internal Server Error');
+  }
+}
+
+// 3. SECURITY MIDDLEWARE
+// 🔐 ENHANCED: Security middleware with improved redirect logic
+const validateApiKey = (req, res, next) => {
+  // Skip validation for static assets and auth endpoints
+  if (req.path.includes('/css/') ||
+    req.path.includes('/js/') ||
+    req.path.includes('/assets/') ||
+    req.path === '/auth' ||
+    req.path === '/api/validate-key' ||
+    req.path === '/api/logout') {
+    return next();
+  }
+
+  // Check for encrypted credentials in session OR cookies
+  const encryptedCreds = req.session?.plaidCredentials || req.cookies?.plaidCredentials;
+
+  // 🔐 FORCE REDIRECT: No valid credentials found
+  if (!encryptedCreds) {
+    console.log(`Access denied to ${req.path} - no credentials found, redirecting to /auth`);
+
+    if (req.accepts('html')) {
+      return res.redirect('/auth');
+    }
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  try {
+    // Decrypt and validate credentials
+    const credentials = decryptCredentials(encryptedCreds);
+
+    // Ensure we have both required credentials
+    if (!credentials.clientId || !credentials.secret) {
+      throw new Error('Incomplete credentials');
+    }
+
+    // Store decrypted credentials for this request
+    req.plaidClientId = credentials.clientId;
+    req.plaidSecret = credentials.secret;
+    req.plaidEnvironment = credentials.environment || 'sandbox';
+
+    // If credentials came from cookie but not session, restore to session
+    if (!req.session?.plaidCredentials && req.cookies?.plaidCredentials) {
+      req.session.plaidCredentials = encryptedCreds;
+      console.log('Restored credentials from cookie to session');
+    }
+
+    next();
+
+  } catch (error) {
+    // 🔐 FORCE REDIRECT: Invalid or corrupted credentials
+    console.log(`Access denied to ${req.path} - invalid credentials:`, error.message);
+
+    // Clean up corrupted data
+    req.session?.destroy();
+    res.clearCookie('plaidCredentials');
+
+    if (req.accepts('html')) {
+      return res.redirect('/auth?error=session_invalid');
+    }
+    return res.status(401).json({ error: 'Session invalid, please re-authenticate' });
+  }
+};
+
+// 🔐 NEW: Apply security middleware to all routes except auth
+app.use(validateApiKey);
+
+// 4. AUTH ROUTES (before static files)
+// 🔐 UPDATED: More secure auth page with better UX
+app.get('/auth', (req, res) => {
+  const error = req.query.error;
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Plaid Test Kit - Secure Authentication</title>
+      <link rel="stylesheet" href="/css/styles.css">
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+      <div class="card" style="max-width: 600px; margin: 50px auto;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1>🔐 Plaid Test Kit</h1>
+          <p style="color: #64748b;">Enter your Plaid API credentials to access the test kit</p>
+        </div>
+        
+        ${error ? `<div class="status status-error">
+          ${getErrorMessage(error)}
+        </div>` : ''}
+        
+        <form method="POST" action="/api/validate-key" id="authForm">
+          <div class="form-group">
+            <label>Plaid Client ID:</label>
+            <input type="text" name="clientId" id="clientId" placeholder="Enter your Plaid Client ID" 
+                   required 
+                   style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 14px;">
+            <small style="color: #666; font-size: 12px;">24-character hexadecimal string</small>
+          </div>
+          
+          <div class="form-group">
+            <label>Plaid Secret:</label>
+            <input type="password" name="secret" id="secret" placeholder="Enter your Plaid Secret" 
+                   required autocomplete="new-password"
+                   style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 14px;">
+            <small style="color: #666; font-size: 12px;">40-character hexadecimal string</small>
+          </div>
+          
+          <div class="form-group">
+            <label>Environment:</label>
+            <select name="environment" required style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+              <option value="sandbox">Sandbox</option>
+            </select>
+            <small style="color: #666; font-size: 12px;">Choose your Plaid environment</small>
+          </div>
+          
+          <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; text-transform: none; letter-spacing: normal;">
+              <input type="checkbox" name="remember" value="1"> 
+              Remember credentials for this session (24 hours max)
+            </label>
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
+            🔐 Authenticate & Access Test Kit
+          </button>
+        </form>
+        
+        <div style="margin-top: 24px; padding: 16px; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; font-size: 13px;">
+          <div style="color: #0369a1; margin-bottom: 8px;"><strong>🛡️ Security Features:</strong></div>
+          <ul style="margin: 0; padding-left: 16px; color: #0369a1; line-height: 1.6;">
+            <li><strong>Encrypted Storage:</strong> Credentials are encrypted using AES-256</li>
+            <li><strong>Validation:</strong> Keys are verified against Plaid servers before storage</li>
+            <li><strong>Session Security:</strong> Data is tied to your browser session only</li>
+            <li><strong>Auto-Expire:</strong> Credentials automatically expire after 24 hours</li>
+            <li><strong>Zero Persistence:</strong> No long-term storage of your credentials</li>
+          </ul>
+        </div>
+        
+        <div style="margin-top: 16px; padding: 16px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; font-size: 13px;">
+          <div style="color: #92400e; margin-bottom: 8px;"><strong>ℹ️ Need Plaid API credentials?</strong></div>
+          <p style="margin: 0; color: #92400e;">
+            Get your API keys at <a href="https://dashboard.plaid.com/signup" target="_blank" style="color: #6366f1;">dashboard.plaid.com</a><br>
+            Navigate to: <strong>Team Settings → Keys</strong>
+          </p>
+        </div>
+        
+        <div style="margin-top: 16px; padding: 16px; background: #fef2f2; border: 1px solid #ef4444; border-radius: 8px; font-size: 13px;">
+          <div style="color: #991b1b; margin-bottom: 8px;"><strong>⚠️ Important Security Notes:</strong></div>
+          <ul style="margin: 0; padding-left: 16px; color: #991b1b; line-height: 1.6;">
+            <li>Only use this tool with <strong>sandbox/development</strong> credentials</li>
+            <li>Never share production credentials on any third-party service</li>
+            <li>This tool does not store your credentials permanently</li>
+            <li>Logout when finished to clear all session data</li>
+          </ul>
+        </div>
+      </div>
+      
+      <script>
+        // Add visual feedback during form submission
+        document.getElementById('authForm').addEventListener('submit', function() {
+          const submitBtn = document.getElementById('submitBtn');
+          submitBtn.textContent = '🔄 Validating credentials...';
+          submitBtn.disabled = true;
+        });
+        
+        // Auto-format credential inputs
+        function formatHexInput(input, expectedLength) {
+          input.addEventListener('input', function() {
+            // Remove any non-hex characters
+            this.value = this.value.replace(/[^a-f0-9]/gi, '').toLowerCase();
+            
+            // Visual feedback for length
+            if (this.value.length === expectedLength) {
+              this.style.borderColor = '#10b981';
+              this.style.backgroundColor = '#f0fdf4';
+            } else {
+              this.style.borderColor = '#e2e8f0';
+              this.style.backgroundColor = '#ffffff';
+            }
+          });
+        }
+        
+        formatHexInput(document.getElementById('clientId'), 24);
+        formatHexInput(document.getElementById('secret'), 40);
+      </script>
+    </body>
+    </html>
+  `);
 });
 
-const plaidClient = new PlaidApi(plaidConfig);
+app.post('/api/validate-key', async (req, res) => {
+  const { clientId, secret, environment, remember } = req.body;
 
-// Store access token (in production, use proper database/session storage)
-let accessToken = null;
+  try {
+    // Map environment to Plaid environment
+    const plaidEnvironments = {
+      'sandbox': PlaidEnvironments.sandbox
+    };
 
-// Store custom link token configuration
-let customLinkConfig = null;
+    // Test the credentials by making a minimal Plaid API call
+    const testConfig = new Configuration({
+      basePath: plaidEnvironments[environment],
+      baseOptions: {
+        headers: {
+          'PLAID-CLIENT-ID': clientId,
+          'PLAID-SECRET': secret,
+        },
+      },
+    });
 
-// Routes
+    const testClient = new PlaidApi(testConfig);
+
+    // Try creating a link token to validate credentials
+    await testClient.linkTokenCreate({
+      user: { client_user_id: 'validation-test-' + Date.now() },
+      client_name: 'Plaid Test Kit - Validation',
+      products: ['auth'],
+      country_codes: ['US'],
+      language: 'en'
+    });
+
+    // If we get here, credentials are valid
+    const credentials = { clientId, secret, environment };
+    const encryptedCreds = encryptCredentials(credentials);
+
+    // Store encrypted credentials in session
+    req.session.plaidCredentials = encryptedCreds;
+
+    // Optionally store in cookie for persistence
+    if (remember) {
+      res.cookie('plaidCredentials', encryptedCreds, {
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+    }
+
+    console.log(`User authenticated successfully with ${environment} environment`);
+    res.redirect('/');
+
+  } catch (error) {
+    console.error('Credential validation failed:', error.response?.data || error.message);
+    res.redirect('/auth?error=validation_failed');
+  }
+});
+
+// 🔐 ENHANCED: Logout with better cleanup and redirect options
+app.post('/api/logout', (req, res) => {
+  const returnUrl = req.body.returnUrl || req.query.returnUrl || '/auth';
+
+  // Complete cleanup
+  req.session?.destroy((err) => {
+    if (err) {
+      console.error('Session destruction error:', err);
+    }
+  });
+
+  // Clear all possible cookies
+  res.clearCookie('plaidCredentials');
+  res.clearCookie('connect.sid'); // Default session cookie
+
+  console.log('User logged out, credentials cleared');
+
+  if (req.accepts('html')) {
+    res.redirect(`${returnUrl}?message=logged_out`);
+  } else {
+    res.json({ success: true, message: 'Logged out successfully', redirect: returnUrl });
+  }
+});
+
+// 5. PAGE ROUTES with navbar injection (before static files)
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  sendPageWithNavbar(res, path.join(__dirname, 'public', 'index.html'), {
+    title: 'Test Kit',
+    subtitle: 'Welcome. Now go and test all the things!',
+    activeItem: 'home'
+  });
 });
 
 app.get('/identity-tester.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'identity-tester.html'));
+  sendPageWithNavbar(res, path.join(__dirname, 'public', 'identity-tester.html'), {
+    title: 'Identity',
+    subtitle: 'Test the /identity/get and /identity/match endpoints',
+    activeItem: 'identity'
+  });
 });
 
 app.get('/auth-tester.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'auth-tester.html'));
+  sendPageWithNavbar(res, path.join(__dirname, 'public', 'auth-tester.html'), {
+    title: 'Auth',
+    subtitle: 'Test the /auth/get endpoint',
+    activeItem: 'auth'
+  });
 });
 
 app.get('/balance-tester.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'balance-tester.html'));
+  sendPageWithNavbar(res, path.join(__dirname, 'public', 'balance-tester.html'), {
+    title: 'Balance',
+    subtitle: 'Test the /accounts/balance/get endpoint',
+    activeItem: 'balance'
+  });
 });
 
 app.get('/link-config.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'link-config.html'));
+  sendPageWithNavbar(res, path.join(__dirname, 'public', 'link-config.html'), {
+    title: 'Link Configuration',
+    subtitle: 'Customize Link token parameters',
+    activeItem: 'link-config'
+  });
 });
 
-// Create link token for Plaid Link with custom configuration support
-app.post('/api/create-link-token', async (req, res) => {
-  try {
-    const { 
-      update_mode, 
-      access_token, 
-      custom_config,
-      hosted_link,
-      ...requestOverrides 
-    } = req.body;
-    
-    // Start with default configuration
-    let linkTokenConfig = {
-      user: {
-        client_user_id: 'test-kit-user-' + Date.now(),
-      },
-      client_name: 'Plaid Test Kit',
-      products: ['auth'],
-      country_codes: ['US'],
-      language: 'en',
-    };
-
-    // Apply custom configuration if provided
-    if (custom_config) {
-      // Merge custom config, preserving user.client_user_id if not specified
-      const userClientId = linkTokenConfig.user.client_user_id;
-      linkTokenConfig = { ...linkTokenConfig, ...custom_config };
-      
-      // Ensure user object exists and preserve client_user_id if not overridden
-      if (!linkTokenConfig.user) {
-        linkTokenConfig.user = { client_user_id: userClientId };
-      } else if (!linkTokenConfig.user.client_user_id) {
-        linkTokenConfig.user.client_user_id = userClientId;
-      }
-    }
-
-    // Apply any request-level overrides
-    linkTokenConfig = { ...linkTokenConfig, ...requestOverrides };
-
-    // Add OAuth redirect URI for OAuth support
-    linkTokenConfig.redirect_uri = `http://localhost:${PORT}/oauth-redirect`;
-
-    // Handle hosted link mode
-    if (hosted_link) {
-      linkTokenConfig.hosted_link = hosted_link;
-      // For hosted link, also set completion redirect URI to return to our app
-      if (!linkTokenConfig.hosted_link.completion_redirect_uri) {
-        linkTokenConfig.hosted_link.completion_redirect_uri = `http://localhost:${PORT}/hosted-link-complete`;
-      }
-    }
-
-    // Handle update mode
-    if (update_mode && access_token) {
-      linkTokenConfig.access_token = access_token;
-      linkTokenConfig.update = {
-        account_selection_enabled: true
-      };
-    }
-
-    console.log('Creating link token with config:', JSON.stringify(linkTokenConfig, null, 2));
-
-    const response = await plaidClient.linkTokenCreate(linkTokenConfig);
-    
-    res.json({
-      success: true,
-      link_token: response.data.link_token,
-      hosted_link_url: response.data.hosted_link_url || null,
-      configuration_used: linkTokenConfig
-    });
-  } catch (error) {
-    console.error('Link token creation error:', error);
-    res.status(500).json({
-      error: 'Failed to create link token',
-      details: error.response?.data || error.message
-    });
-  }
-});
-
-// Set custom link token configuration
-app.post('/api/set-link-config', async (req, res) => {
-  try {
-    const { config } = req.body;
-    
-    if (!config || typeof config !== 'object') {
-      return res.status(400).json({ error: 'Valid configuration object is required' });
-    }
-
-    // Validate required fields
-    const requiredFields = ['client_name', 'products', 'country_codes'];
-    const missingFields = requiredFields.filter(field => !config[field]);
-    
-    if (missingFields.length > 0) {
-      return res.status(400).json({ 
-        error: `Missing required fields: ${missingFields.join(', ')}` 
-      });
-    }
-
-    // Validate products array
-    if (!Array.isArray(config.products) || config.products.length === 0) {
-      return res.status(400).json({ 
-        error: 'Products must be a non-empty array' 
-      });
-    }
-
-    // Validate country codes
-    if (!Array.isArray(config.country_codes) || config.country_codes.length === 0) {
-      return res.status(400).json({ 
-        error: 'Country codes must be a non-empty array' 
-      });
-    }
-
-    customLinkConfig = config;
-    
-    res.json({ 
-      success: true, 
-      message: 'Link token configuration saved successfully',
-      config: customLinkConfig
-    });
-  } catch (error) {
-    console.error('Set link config error:', error);
-    res.status(500).json({ 
-      error: 'Failed to set link configuration', 
-      details: error.message 
-    });
-  }
-});
-
-// Get current link token configuration
-app.get('/api/get-link-config', async (req, res) => {
-  try {
-    res.json({ 
-      success: true, 
-      config: customLinkConfig || null,
-      has_custom_config: !!customLinkConfig
-    });
-  } catch (error) {
-    console.error('Get link config error:', error);
-    res.status(500).json({ 
-      error: 'Failed to get link configuration', 
-      details: error.message 
-    });
-  }
-});
-
-// Clear custom link token configuration
-app.post('/api/clear-link-config', async (req, res) => {
-  try {
-    customLinkConfig = null;
-    
-    res.json({ 
-      success: true, 
-      message: 'Link token configuration cleared successfully'
-    });
-  } catch (error) {
-    console.error('Clear link config error:', error);
-    res.status(500).json({ 
-      error: 'Failed to clear link configuration', 
-      details: error.message 
-    });
-  }
-});
-
+// 6. OTHER GET ROUTES (OAuth, hosted link, etc.)
 // Hosted Link completion handler
 app.get('/hosted-link-complete', async (req, res) => {
   try {
     console.log('Hosted Link completion received');
-    
+
     // Return a simple page that will handle the completion
     res.send(`
       <!DOCTYPE html>
@@ -289,13 +565,13 @@ app.get('/hosted-link-complete', async (req, res) => {
 app.get('/oauth-redirect', async (req, res) => {
   try {
     const { oauth_state_id, institution_id } = req.query;
-    
+
     console.log('OAuth redirect received:', {
       oauth_state_id,
       institution_id,
       query: req.query
     });
-    
+
     // Return a simple page that will be handled by Link
     res.send(`
       <!DOCTYPE html>
@@ -328,11 +604,257 @@ app.get('/oauth-redirect', async (req, res) => {
   }
 });
 
+// 🔐 OPTIONAL: Add a route to manually check auth status
+app.get('/api/auth-status', (req, res) => {
+  const hasSession = !!req.session?.plaidCredentials;
+  const hasCookie = !!req.cookies?.plaidCredentials;
+  const isAuthenticated = !!(req.plaidClientId && req.plaidSecret);
+
+  res.json({
+    authenticated: isAuthenticated,
+    has_session: hasSession,
+    has_cookie: hasCookie,
+    environment: req.plaidEnvironment || 'unknown',
+    client_id_present: !!req.plaidClientId,
+    will_redirect: !isAuthenticated
+  });
+});
+
+// 🔐 ENHANCED: Add route to force re-authentication
+app.post('/api/force-reauth', (req, res) => {
+  req.session?.destroy();
+  res.clearCookie('plaidCredentials');
+
+  if (req.accepts('html')) {
+    res.redirect('/auth?message=reauth_requested');
+  } else {
+    res.json({ success: true, message: 'Please re-authenticate' });
+  }
+});
+
+// 🔐 OPTIONAL: Add a "login required" page for better UX
+app.get('/login-required', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Login Required - Plaid Test Kit</title>
+      <link rel="stylesheet" href="/css/styles.css">
+    </head>
+    <body>
+      <div class="card" style="max-width: 500px; margin: 100px auto; text-align: center;">
+        <h2>🔐 Authentication Required</h2>
+        <p>You need to be logged in to access this page.</p>
+        <a href="/auth" class="btn btn-primary">Login with Plaid Credentials</a>
+        <p style="margin-top: 20px; font-size: 14px; color: #666;">
+          Your session may have expired or you haven't logged in yet.
+        </p>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  console.log('Health check - accessToken exists:', !!accessToken, 'Value:', accessToken ? 'present' : 'null');
+
+  res.json({
+    status: 'OK',
+    hasAccessToken: !!accessToken,
+    access_token: accessToken || null,
+    has_custom_link_config: !!customLinkConfig,
+    custom_link_config: customLinkConfig || null,
+    environment: 'sandbox',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 7. STATIC FILES LAST (after all GET routes)
+app.use(express.static('public', {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    } else if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+  }
+}));
+
+// Store access token (in production, use proper database/session storage)
+let accessToken = null;
+
+// Store custom link token configuration
+let customLinkConfig = null;
+
+// 8. API POST ROUTES (order doesn't matter for these)
+// Create link token for Plaid Link with custom configuration support
+app.post('/api/create-link-token', async (req, res) => {
+  try {
+    const {
+      update_mode,
+      access_token,
+      custom_config,
+      hosted_link,
+      ...requestOverrides
+    } = req.body;
+
+    // Start with default configuration
+    let linkTokenConfig = {
+      user: {
+        client_user_id: 'test-kit-user-' + Date.now(),
+      },
+      client_name: 'Plaid Test Kit',
+      products: ['auth'],
+      country_codes: ['US'],
+      language: 'en',
+    };
+
+    // Apply custom configuration if provided
+    if (custom_config) {
+      // Merge custom config, preserving user.client_user_id if not specified
+      const userClientId = linkTokenConfig.user.client_user_id;
+      linkTokenConfig = { ...linkTokenConfig, ...custom_config };
+
+      // Ensure user object exists and preserve client_user_id if not overridden
+      if (!linkTokenConfig.user) {
+        linkTokenConfig.user = { client_user_id: userClientId };
+      } else if (!linkTokenConfig.user.client_user_id) {
+        linkTokenConfig.user.client_user_id = userClientId;
+      }
+    }
+
+    // Apply any request-level overrides
+    linkTokenConfig = { ...linkTokenConfig, ...requestOverrides };
+
+    // Add OAuth redirect URI for OAuth support
+    linkTokenConfig.redirect_uri = `http://localhost:${PORT}/oauth-redirect`;
+
+    // Handle hosted link mode
+    if (hosted_link) {
+      linkTokenConfig.hosted_link = hosted_link;
+      // For hosted link, also set completion redirect URI to return to our app
+      if (!linkTokenConfig.hosted_link.completion_redirect_uri) {
+        linkTokenConfig.hosted_link.completion_redirect_uri = `http://localhost:${PORT}/hosted-link-complete`;
+      }
+    }
+
+    // Handle update mode
+    if (update_mode && access_token) {
+      linkTokenConfig.access_token = access_token;
+      linkTokenConfig.update = {
+        account_selection_enabled: true
+      };
+    }
+
+    console.log('Creating link token with config:', JSON.stringify(linkTokenConfig, null, 2));
+
+    const response = await plaidClient.linkTokenCreate(linkTokenConfig);
+
+    res.json({
+      success: true,
+      link_token: response.data.link_token,
+      hosted_link_url: response.data.hosted_link_url || null,
+      configuration_used: linkTokenConfig
+    });
+  } catch (error) {
+    console.error('Link token creation error:', error);
+    res.status(500).json({
+      error: 'Failed to create link token',
+      details: error.response?.data || error.message
+    });
+  }
+});
+
+// Set custom link token configuration
+app.post('/api/set-link-config', async (req, res) => {
+  try {
+    const { config } = req.body;
+
+    if (!config || typeof config !== 'object') {
+      return res.status(400).json({ error: 'Valid configuration object is required' });
+    }
+
+    // Validate required fields
+    const requiredFields = ['client_name', 'products', 'country_codes'];
+    const missingFields = requiredFields.filter(field => !config[field]);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+
+    // Validate products array
+    if (!Array.isArray(config.products) || config.products.length === 0) {
+      return res.status(400).json({
+        error: 'Products must be a non-empty array'
+      });
+    }
+
+    // Validate country codes
+    if (!Array.isArray(config.country_codes) || config.country_codes.length === 0) {
+      return res.status(400).json({
+        error: 'Country codes must be a non-empty array'
+      });
+    }
+
+    customLinkConfig = config;
+
+    res.json({
+      success: true,
+      message: 'Link token configuration saved successfully',
+      config: customLinkConfig
+    });
+  } catch (error) {
+    console.error('Set link config error:', error);
+    res.status(500).json({
+      error: 'Failed to set link configuration',
+      details: error.message
+    });
+  }
+});
+
+// Get current link token configuration
+app.get('/api/get-link-config', async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      config: customLinkConfig || null,
+      has_custom_config: !!customLinkConfig
+    });
+  } catch (error) {
+    console.error('Get link config error:', error);
+    res.status(500).json({
+      error: 'Failed to get link configuration',
+      details: error.message
+    });
+  }
+});
+
+// Clear custom link token configuration
+app.post('/api/clear-link-config', async (req, res) => {
+  try {
+    customLinkConfig = null;
+
+    res.json({
+      success: true,
+      message: 'Link token configuration cleared successfully'
+    });
+  } catch (error) {
+    console.error('Clear link config error:', error);
+    res.status(500).json({
+      error: 'Failed to clear link configuration',
+      details: error.message
+    });
+  }
+});
+
 // Get link token details (for hosted link completion)
 app.post('/api/get-link-token', async (req, res) => {
   try {
     const { link_token } = req.body;
-    
+
     if (!link_token) {
       return res.status(400).json({ error: 'link_token is required' });
     }
@@ -344,16 +866,16 @@ app.post('/api/get-link-token', async (req, res) => {
     // Extract public token from the most recent successful session
     let publicToken = null;
     let metadata = null;
-    
+
     if (response.data.link_sessions && response.data.link_sessions.length > 0) {
       // Find the most recent completed session
       const completedSessions = response.data.link_sessions
         .filter(session => session.finished_at && session.results)
         .sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at));
-      
+
       if (completedSessions.length > 0) {
         const latestSession = completedSessions[0];
-        
+
         // Check for public token in results (preferred method)
         if (latestSession.results && latestSession.results.item_add_results && latestSession.results.item_add_results.length > 0) {
           publicToken = latestSession.results.item_add_results[0].public_token;
@@ -370,7 +892,7 @@ app.post('/api/get-link-token', async (req, res) => {
         }
       }
     }
-    
+
     res.json({
       success: true,
       public_token: publicToken,
@@ -381,9 +903,9 @@ app.post('/api/get-link-token', async (req, res) => {
 
   } catch (error) {
     console.error('Get link token error:', error);
-    res.status(500).json({ 
-      error: 'Failed to get link token details', 
-      details: error.response?.data || error.message 
+    res.status(500).json({
+      error: 'Failed to get link token details',
+      details: error.response?.data || error.message
     });
   }
 });
@@ -392,7 +914,7 @@ app.post('/api/get-link-token', async (req, res) => {
 app.post('/api/exchange-token', async (req, res) => {
   try {
     const { public_token } = req.body;
-    
+
     if (!public_token) {
       return res.status(400).json({ error: 'public_token is required' });
     }
@@ -402,18 +924,18 @@ app.post('/api/exchange-token', async (req, res) => {
     });
 
     accessToken = response.data.access_token;
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: 'Token exchanged successfully',
       item_id: response.data.item_id,
       access_token: accessToken
     });
   } catch (error) {
     console.error('Token exchange error:', error);
-    res.status(500).json({ 
-      error: 'Failed to exchange token', 
-      details: error.response?.data || error.message 
+    res.status(500).json({
+      error: 'Failed to exchange token',
+      details: error.response?.data || error.message
     });
   }
 });
@@ -422,7 +944,7 @@ app.post('/api/exchange-token', async (req, res) => {
 app.post('/api/set-token', async (req, res) => {
   try {
     const { access_token } = req.body;
-    
+
     if (!access_token) {
       return res.status(400).json({ error: 'access_token is required' });
     }
@@ -432,25 +954,25 @@ app.post('/api/set-token', async (req, res) => {
       await plaidClient.accountsGet({
         access_token: access_token,
       });
-      
+
       accessToken = access_token;
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         message: 'Access token set successfully',
         access_token: accessToken
       });
     } catch (tokenError) {
-      res.status(400).json({ 
-        error: 'Invalid access token', 
-        details: tokenError.response?.data || tokenError.message 
+      res.status(400).json({
+        error: 'Invalid access token',
+        details: tokenError.response?.data || tokenError.message
       });
     }
   } catch (error) {
     console.error('Set token error:', error);
-    res.status(500).json({ 
-      error: 'Failed to set token', 
-      details: error.response?.data || error.message 
+    res.status(500).json({
+      error: 'Failed to set token',
+      details: error.response?.data || error.message
     });
   }
 });
@@ -483,9 +1005,9 @@ app.post('/api/get-accounts', async (req, res) => {
 
   } catch (error) {
     console.error('Get accounts error:', error);
-    res.status(500).json({ 
-      error: 'Failed to get accounts', 
-      details: error.response?.data || error.message 
+    res.status(500).json({
+      error: 'Failed to get accounts',
+      details: error.response?.data || error.message
     });
   }
 });
@@ -510,7 +1032,7 @@ app.post('/api/test-identity', async (req, res) => {
 
     // Use the selected account index, default to 0 if not provided
     const selectedIndex = account_index !== undefined ? parseInt(account_index) : 0;
-    
+
     if (selectedIndex >= accountsResponse.data.accounts.length) {
       throw new Error(`Selected account index ${selectedIndex} is out of range`);
     }
@@ -541,7 +1063,7 @@ app.post('/api/test-identity', async (req, res) => {
           account_ids: [selectedAccountId]
         }
       }),
-      
+
       // Match identity data for specific account
       plaidClient.identityMatch({
         access_token: accessToken,
@@ -609,9 +1131,9 @@ app.post('/api/test-identity', async (req, res) => {
 
   } catch (error) {
     console.error('Identity API error:', error);
-    res.status(500).json({ 
-      error: 'Failed to test identity endpoints', 
-      details: error.response?.data || error.message 
+    res.status(500).json({
+      error: 'Failed to test identity endpoints',
+      details: error.response?.data || error.message
     });
   }
 });
@@ -636,7 +1158,7 @@ app.post('/api/test-auth', async (req, res) => {
 
     // Use the selected account index, default to 0 if not provided
     const selectedIndex = account_index !== undefined ? parseInt(account_index) : 0;
-    
+
     if (selectedIndex >= accountsResponse.data.accounts.length) {
       throw new Error(`Selected account index ${selectedIndex} is out of range`);
     }
@@ -695,9 +1217,9 @@ app.post('/api/test-auth', async (req, res) => {
 
   } catch (error) {
     console.error('Auth API error:', error);
-    res.status(500).json({ 
-      error: 'Failed to test auth endpoint', 
-      details: error.response?.data || error.message 
+    res.status(500).json({
+      error: 'Failed to test auth endpoint',
+      details: error.response?.data || error.message
     });
   }
 });
@@ -722,7 +1244,7 @@ app.post('/api/test-balance', async (req, res) => {
 
     // Use the selected account index, default to 0 if not provided
     const selectedIndex = account_index !== undefined ? parseInt(account_index) : 0;
-    
+
     if (selectedIndex >= accountsResponse.data.accounts.length) {
       throw new Error(`Selected account index ${selectedIndex} is out of range`);
     }
@@ -772,9 +1294,9 @@ app.post('/api/test-balance', async (req, res) => {
 
   } catch (error) {
     console.error('Balance API error:', error);
-    res.status(500).json({ 
-      error: 'Failed to test balance endpoint', 
-      details: error.response?.data || error.message 
+    res.status(500).json({
+      error: 'Failed to test balance endpoint',
+      details: error.response?.data || error.message
     });
   }
 });
@@ -783,56 +1305,20 @@ app.post('/api/test-balance', async (req, res) => {
 app.post('/api/clear-token', async (req, res) => {
   try {
     accessToken = null;
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: 'Access token cleared successfully'
     });
   } catch (error) {
     console.error('Clear token error:', error);
-    res.status(500).json({ 
-      error: 'Failed to clear token', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to clear token',
+      details: error.message
     });
   }
 });
 
-// Health check
-app.get('/health', (req, res) => {
-  console.log('Health check - accessToken exists:', !!accessToken, 'Value:', accessToken ? 'present' : 'null');
-  
-  res.json({ 
-    status: 'OK', 
-    hasAccessToken: !!accessToken,
-    access_token: accessToken || null,
-    has_custom_link_config: !!customLinkConfig,
-    custom_link_config: customLinkConfig || null,
-    environment: 'sandbox',
-    timestamp: new Date().toISOString()
-  });
-});
-
 app.listen(PORT, () => {
   console.log(`🚀 Plaid Test Kit running on http://localhost:${PORT}`);
-  console.log('OAuth redirect URI configured for:', `http://localhost:${PORT}/oauth-redirect`);
-  console.log('Make sure to set PLAID_CLIENT_ID and PLAID_SECRET environment variables');
-  console.log('');
-  console.log('Available routes:');
-  console.log('  GET  /                      - Start page (Link selection)');
-  console.log('  GET  /identity-tester.html  - Identity API testing page');
-  console.log('  GET  /auth-tester.html      - Auth API testing page');
-  console.log('  GET  /balance-tester.html   - Balance API testing page');
-  console.log('  GET  /link-config.html      - Link token configuration page');
-  console.log('  POST /api/create-link-token - Create Link token');
-  console.log('  POST /api/exchange-token    - Exchange public token');
-  console.log('  POST /api/set-token         - Set access token directly');
-  console.log('  POST /api/clear-token       - Clear access token');
-  console.log('  POST /api/set-link-config   - Set custom Link configuration');
-  console.log('  GET  /api/get-link-config   - Get current Link configuration');
-  console.log('  POST /api/clear-link-config - Clear Link configuration');
-  console.log('  POST /api/get-accounts      - Get available accounts');
-  console.log('  POST /api/test-identity     - Test Identity APIs');
-  console.log('  POST /api/test-auth         - Test Auth API');
-  console.log('  POST /api/test-balance      - Test Balance API');
-  console.log('  GET  /health               - Health check');
 });

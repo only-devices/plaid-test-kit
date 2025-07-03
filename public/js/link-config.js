@@ -8,6 +8,11 @@ const PLAID_PRODUCTS = [
         description: 'Access to account and routing numbers for ACH'
     },
     {
+        id: 'balance',
+        name: 'Balance',
+        description: 'Access to account balances'
+    },
+    {
         id: 'transactions',
         name: 'Transactions',
         description: 'Access to account transactions and history'
@@ -21,11 +26,6 @@ const PLAID_PRODUCTS = [
         id: 'assets',
         name: 'Assets',
         description: 'Access to asset reports for income verification'
-    },
-    {
-        id: 'income',
-        name: 'Income',
-        description: 'Access to income verification data'
     },
     {
         id: 'investments',
