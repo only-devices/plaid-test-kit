@@ -7,13 +7,18 @@ A comprehensive test kit for Plaid's Link experiences and API endpoints in sandb
 ### Link Experiences
 - **Standard Link**: Classic modal experience with full OAuth support
 - **Embedded Link**: Modern embedded experience with seamless page integration
+- **Hosted Link**: Opens Plaid-hosted Link session and then returns to app once complete with access token
 - **Update Mode**: Add additional accounts to existing connections using account selection
 
 ### API Testing Modules
-- **Identity APIs**: Test both `/identity/get` and `/identity/match` simultaneously
-- **Account Selection**: Test with specific accounts from connected institutions
-- **Real-time Results**: Side-by-side comparison of match scores and retrieved data
-- **OAuth Detection**: Automatic detection and display of OAuth vs credential-based connections
+
+- **Identity APIs**: Test both `/identity/get` and `/identity/match` simultaneously. View match scores, compare input vs. retrieved data, and see raw API responses.
+- **Auth API**: Test the `/auth/get` endpoint to retrieve account and routing numbers for selected accounts. View ACH, routing, and wire routing numbers, as well as account type and subtype.
+- **Balance API**: Test the `/accounts/balance/get` endpoint to retrieve real-time balance information for selected accounts. See available, current, and credit limit balances, currency codes, and last updated timestamps.
+- **Account Selection**: For all modules, select specific accounts from connected institutions to test API responses on a per-account basis.
+- **Real-time Results**: All modules display results instantly, including formatted and raw JSON responses for easy debugging.
+- **Copy-to-Clipboard**: Easily copy raw API responses for any test with a single click.
+- **OAuth Detection**: Automatic detection and display of OAuth vs credential-based connections for all API tests.
 
 ### Technical Features
 - **Modular Architecture**: Clean separation of concerns with shared utilities
@@ -25,25 +30,50 @@ A comprehensive test kit for Plaid's Link experiences and API endpoints in sandb
 
 ```
 plaid-test-kit/
-├── app.js                          # Express server
-├── package.json                    # Dependencies and scripts
-├── .env.example                    # Environment variables template
-├── .env                           # Your environment variables
-├── README.md                      # This file
+├── app.js
+├── package.json
+├── .env.example
+├── .env
+├── README.md
 └── public/
-    ├── index.html                 # Start page with Link options
-    ├── identity-tester.html       # Identity API testing interface
+    ├── index.html
+    ├── identity-tester.html
+    ├── auth-tester.html
+    ├── balance-tester.html
+    ├── link-config.html
     ├── css/
-    │   └── styles.css            # Shared styles and design system
+    │   └── styles.css
     └── js/
-        ├── api-client.js         # API communication module
-        ├── plaid-link.js         # Plaid Link wrapper and utilities
-        ├── ui-utils.js           # UI utilities and helpers
-        ├── start-page.js         # Start page functionality
-        └── identity-tester.js    # Identity testing functionality
+        ├── account-manager.js
+        ├── api-client.js
+        ├── auth-tester.js
+        ├── balance-tester.js
+        ├── identity-tester.js
+        ├── link-config.js
+        ├── plaid-link.js
+        ├── start-page.js
+        └── ui-utils.js
 ```
 
+## Features
+
+- **Multiple Link Experiences:** Standard, Embedded, Update Mode
+- **API Testing:** Identity, Auth, and Balance endpoints
+- **OAuth Support:** Automatic detection and redirect handling
+- **Session Management:** In-memory for dev, file-based for production
+- **Copy-to-Clipboard:** Easily copy tokens and URLs
+- **Modular Architecture:** Separate JS modules for each tester
+- **Responsive UI:** Works on desktop and mobile
+- **Live Status & Error Handling:** Real-time feedback in the UI
+
+## Configuration
+
+- Set environment variables in `.env` (see `.env.example`)
+- `BASE_URL` is injected into the frontend via `/config.js` and available as `window.BASE_URL`
+
 ## Quick Start
+
+I used Node v24 when building and running this as of July 2025.
 
 ### 1. Install Dependencies
 ```bash
@@ -55,10 +85,10 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` with your Plaid credentials:
+Edit `.env` with the following:
 ```env
-PLAID_CLIENT_ID=your_plaid_client_id_here
-PLAID_SECRET=your_plaid_sandbox_secret_here
+SESSION_SECRET=32_character_random_string_used_for_auth
+ENCRYPTION_KEY=32_character_random_string_used_for_auth
 PORT=3000
 ```
 
@@ -90,21 +120,6 @@ Navigate to `http://localhost:3000`
 2. **Connect Your Bank**: Use any institution - OAuth will be used automatically if supported
 3. **View Results**: See connection details and obtain access token
 
-### Testing Identity APIs
-
-1. **Access Token**: Either continue from Link or enter an existing access token
-2. **Load Accounts**: Load available accounts from your connection
-3. **Enter User Data**: Fill in the user information form
-4. **Select Account**: Choose which account to test against
-5. **Run Tests**: Submit to test both Identity endpoints simultaneously
-6. **View Results**: Compare match scores with retrieved data
-
-### Update Mode Testing
-
-1. **Enter Access Token**: Provide an existing access token
-2. **Start Update Mode**: Link will open with account selection enabled
-3. **Add Accounts**: Select additional accounts to add to the connection
-
 ## API Endpoints
 
 | Method | Endpoint | Description |
@@ -116,8 +131,10 @@ Navigate to `http://localhost:3000`
 | `POST` | `/api/set-token` | Set access_token directly |
 | `POST` | `/api/get-accounts` | Get available accounts |
 | `POST` | `/api/test-identity` | Test Identity endpoints |
+| `POST` | `/api/logout` | Clears session |
 | `GET` | `/oauth-redirect` | Handle OAuth redirects |
-| `GET` | `/health` | Health check and server status |
+| `GET` | `/health` | Public health check and server status |
+| `GET` | `/api/status` | Front-end API health status (behind login) |
 
 ## Features in Detail
 
@@ -133,23 +150,13 @@ Navigate to `http://localhost:3000`
 - **Real-time Status**: Live updates on Link events and status
 - **Responsive Design**: Works seamlessly on all screen sizes
 
-### Update Mode
-- **Account Selection**: Enable users to add additional accounts
-- **Token Validation**: Automatic validation of existing access tokens
-- **Seamless Flow**: Integrated experience for account additions
-
-### Identity API Testing
-- **Comprehensive Testing**: Test both `/get` and `/match` endpoints
-- **Account Filtering**: Test specific accounts from multi-account connections
-- **Score Visualization**: Clear display of match scores and boolean flags
-- **Data Comparison**: Side-by-side view of input vs retrieved data
-
 ## Modular Architecture
 
 ### Shared Modules
 
 - **API Client**: Centralized API communication with error handling
 - **Plaid Link Manager**: Unified Link management for all modes
+- **Plaid Account Manager**: Passes account details between different testing modules
 - **UI Utils**: Reusable UI utilities and status management
 
 ### Benefits

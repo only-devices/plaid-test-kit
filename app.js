@@ -187,8 +187,8 @@ function generateNavbar(config = {}) {
     { href: '/', text: 'Home', id: 'home' },
     { href: '/link-config.html', text: 'Link Config', id: 'link-config' },
     { href: '/auth-tester.html', text: 'Auth', id: 'auth' },
-    { href: '/identity-tester.html', text: 'Identity', id: 'identity' },
-    { href: '/balance-tester.html', text: 'Balance', id: 'balance' }
+    { href: '/balance-tester.html', text: 'Balance', id: 'balance' },
+    { href: '/identity-tester.html', text: 'Identity', id: 'identity' }
   ];
 
   const navItemsHTML = navItems.map(item => {
