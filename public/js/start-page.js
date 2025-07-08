@@ -39,6 +39,57 @@ class StartPage {
         }
     }
 
+    async copyBaseUrl() {
+        const baseUrlElement = document.getElementById('baseUrl');
+        const copyBaseUrlBtn = document.getElementById('copyBaseUrlBtn');
+        const originalText = copyBaseUrlBtn.textContent;
+
+        if (!baseUrlElement) {
+            console.error('Base URL element not found');
+            return;
+        }
+
+        const baseUrl = baseUrlElement.textContent.trim();
+
+        try {
+            // Copy to clipboard
+            await navigator.clipboard.writeText(baseUrl);
+
+            // Update button to show success
+            copyBaseUrlBtn.textContent = 'Copied!';
+            copyBaseUrlBtn.classList.add('copied');
+
+            // Show notification
+            UIUtils.showNotification('OAuth redirect URI copied to clipboard!', 'success');
+
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                copyBaseUrlBtn.textContent = originalText;
+                copyBaseUrlBtn.classList.remove('copied');
+            }, 2000);
+
+        } catch (error) {
+            console.error('Failed to copy URL:', error);
+
+            // Fallback: select the text for manual copying
+            const range = document.createRange();
+            range.selectNode(baseUrlElement);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+
+            // Update button to show fallback
+            copyBaseUrlBtn.textContent = 'Selected - Press Ctrl+C';
+
+            UIUtils.showNotification('Please press Ctrl+C to copy the selected URL', 'warning');
+
+            // Reset button after 3 seconds
+            setTimeout(() => {
+                window.getSelection().removeAllRanges();
+                copyBaseUrlBtn.textContent = originalText;
+            }, 3000);
+        }
+    }
+
     async processHostedLinkCompletion() {
         try {
             UIUtils.showStatus('globalStatus', 'Processing hosted link completion...', 'info');
@@ -163,7 +214,7 @@ class StartPage {
             const summary = document.getElementById('configSummary');
             const productCount = this.customConfig.products ? this.customConfig.products.length : 0;
             const countryCount = this.customConfig.country_codes ? this.customConfig.country_codes.length : 0;
-            
+
             // NEW: Include additional consented products in summary
             const additionalConsentedCount = this.customConfig.additional_consented_products ? this.customConfig.additional_consented_products.length : 0;
             const additionalText = additionalConsentedCount > 0 ? ` + ${additionalConsentedCount} additional consented` : '';
@@ -597,8 +648,8 @@ class StartPage {
 
     showUpdateMode() {
         UIUtils.toggleElement('updateModeCard', true);
-        document.getElementById('updateModeCard').scrollIntoView({ 
-            behavior: 'smooth' 
+        document.getElementById('updateModeCard').scrollIntoView({
+            behavior: 'smooth'
         });
         document.getElementById('updateAccessToken').focus();
     }
@@ -607,7 +658,7 @@ class StartPage {
         UIUtils.toggleElement('updateModeCard', false);
         UIUtils.clearStatus('updateStatus');
     }
-    
+
     async startUpdateMode() {
         try {
             const accessToken = document.getElementById('updateAccessToken').value.trim();
@@ -891,7 +942,7 @@ class StartPage {
         // NEW: Display additional consented products if present
         const mainProducts = this.customConfig?.products?.join(', ') || 'auth';
         const additionalProducts = this.customConfig?.additional_consented_products;
-        const productsDisplay = additionalProducts && additionalProducts.length > 0 
+        const productsDisplay = additionalProducts && additionalProducts.length > 0
             ? `${mainProducts} + ${additionalProducts.join(', ')} (additional)`
             : mainProducts;
 
@@ -979,7 +1030,10 @@ class StartPage {
 }
 
 // Global functions for onclick handlers
-// Global functions for onclick handlers
+function copyBaseUrl() {
+    window.startPage.copyBaseUrl();
+}
+
 function startStandardLink() {
     window.startPage.startStandardLink();
 }

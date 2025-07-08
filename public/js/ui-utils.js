@@ -268,7 +268,7 @@ class UIUtils {
         notification.textContent = message;
         notification.style.cssText = `
             position: fixed;
-            top: 24px;
+            bottom: 24px;
             right: 24px;
             z-index: 1000;
             max-width: 400px;

@@ -338,9 +338,21 @@ app.get('/auth', (req, res) => {
     <body>
       <div class="card" style="max-width: 600px; margin: 50px auto;">
         <div style="text-align: center; margin-bottom: 24px;">
-          <h1>🔐 Plaid Test Kit</h1>
-          <p style="color: #64748b;">Enter your Plaid API credentials to access the test kit</p>
+          <h1>🧪 Plaid Test Kit</h1>
+          <p style="color: #64748b;">Enter your Plaid API credentials below to get started</p>
         </div>
+        
+        <div style="margin-top: 24px; padding: 16px; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; font-size: 13px;">
+          <div style="color: #0369a1; margin-bottom: 8px;"><strong>🛡️ Security Features:</strong></div>
+          <ul style="margin: 0; padding-left: 16px; color: #0369a1; line-height: 1.6;">
+            <li><strong>Encrypted Storage:</strong> Credentials are encrypted using AES-256</li>
+            <li><strong>Validation:</strong> Keys are verified against Plaid servers before storage</li>
+            <li><strong>Session Security:</strong> Data is tied to your browser session only</li>
+            <li><strong>Auto-Expire:</strong> Credentials automatically expire after 24 hours</li>
+            <li><strong>Zero Persistence:</strong> No long-term storage of your credentials</li>
+          </ul>
+        </div>
+        <br>
         
         ${error ? `<div class="status status-error">
           ${getErrorMessage(error)}
@@ -379,36 +391,16 @@ app.get('/auth', (req, res) => {
           </div>
           
           <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
-            🔐 Authenticate & Access Test Kit
+            🔐 Access the Test Kit
           </button>
         </form>
-        
-        <div style="margin-top: 24px; padding: 16px; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; font-size: 13px;">
-          <div style="color: #0369a1; margin-bottom: 8px;"><strong>🛡️ Security Features:</strong></div>
-          <ul style="margin: 0; padding-left: 16px; color: #0369a1; line-height: 1.6;">
-            <li><strong>Encrypted Storage:</strong> Credentials are encrypted using AES-256</li>
-            <li><strong>Validation:</strong> Keys are verified against Plaid servers before storage</li>
-            <li><strong>Session Security:</strong> Data is tied to your browser session only</li>
-            <li><strong>Auto-Expire:</strong> Credentials automatically expire after 24 hours</li>
-            <li><strong>Zero Persistence:</strong> No long-term storage of your credentials</li>
-          </ul>
-        </div>
-        
-        <div style="margin-top: 16px; padding: 16px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; font-size: 13px;">
-          <div style="color: #92400e; margin-bottom: 8px;"><strong>ℹ️ Need Plaid API credentials?</strong></div>
-          <p style="margin: 0; color: #92400e;">
-            Get your API keys at <a href="https://dashboard.plaid.com/signup" target="_blank" style="color: #6366f1;">dashboard.plaid.com</a><br>
-            Navigate to: <strong>Team Settings → Keys</strong>
-          </p>
-        </div>
         
         <div style="margin-top: 16px; padding: 16px; background: #fef2f2; border: 1px solid #ef4444; border-radius: 8px; font-size: 13px;">
           <div style="color: #991b1b; margin-bottom: 8px;"><strong>⚠️ Important Security Notes:</strong></div>
           <ul style="margin: 0; padding-left: 16px; color: #991b1b; line-height: 1.6;">
-            <li>Only use this tool with <strong>sandbox/development</strong> credentials</li>
-            <li>Never share production credentials on any third-party service</li>
+            <li>Only Plaid Sandbox environment and credentials are currently supported</li>
             <li>This tool does not store your credentials permanently</li>
-            <li>Logout when finished to clear all session data</li>
+            <li>Use the logout button to clear session data stored in your browser</li>
           </ul>
         </div>
       </div>
@@ -569,6 +561,12 @@ app.get('/link-config.html', (req, res) => {
 });
 
 // 6. OTHER GET ROUTES (OAuth, hosted link, etc.)
+// Helper endpoint to return BASE_URL variable
+app.get('/config.js', (req, res) => {
+  res.type('application/javascript');
+  res.send(`window.BASE_URL = "${process.env.BASE_URL || `http://localhost:${PORT}`}"`);
+});
+
 // Hosted Link completion handler
 app.get('/hosted-link-complete', async (req, res) => {
   try {
