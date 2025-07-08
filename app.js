@@ -11,6 +11,13 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || 'localhost';
+// Check for required environment variables
+if (!process.env.SESSION_SECRET) {
+  console.error('❌ FATAL ERROR: SESSION_SECRET environment variable is required for security');
+  console.error('   Generate one with: openssl rand -base64 32');
+  console.error('   Then set it in your environment or .env file');
+  process.exit(1);
+}
 
 // 1. BASIC MIDDLEWARE
 app.use(express.json());
@@ -23,9 +30,12 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+    secure: false,
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax'
+  },
+  name: 'plaid-test-kit-session'
 }));
 
 // 2. UTILITY FUNCTIONS
