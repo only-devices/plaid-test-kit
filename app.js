@@ -384,7 +384,6 @@ app.get('/auth', (req, res) => {
             <input type="text" name="clientId" id="clientId" placeholder="Enter your Plaid Client ID" 
                    required 
                    style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 14px;">
-            <small style="color: #666; font-size: 12px;">24-character hexadecimal string</small>
           </div>
           
           <div class="form-group">
@@ -392,7 +391,6 @@ app.get('/auth', (req, res) => {
             <input type="password" name="secret" id="secret" placeholder="Enter your Plaid Secret" 
                    required autocomplete="new-password"
                    style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 14px;">
-            <small style="color: #666; font-size: 12px;">40-character hexadecimal string</small>
           </div>
           
           <div class="form-group">
