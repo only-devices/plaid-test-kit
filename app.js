@@ -10,6 +10,7 @@ const cookieParser = require('cookie-parser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || 'localhost';
 
 // 1. BASIC MIDDLEWARE
 app.use(express.json());
@@ -730,14 +731,14 @@ app.post('/api/create-link-token', async (req, res) => {
     linkTokenConfig = { ...linkTokenConfig, ...requestOverrides };
 
     // Add OAuth redirect URI for OAuth support
-    linkTokenConfig.redirect_uri = `http://localhost:${PORT}/oauth-redirect`;
+    linkTokenConfig.redirect_uri = `http://${HOST}:${PORT}/oauth-redirect`;
 
     // Handle hosted link mode
     if (hosted_link) {
       linkTokenConfig.hosted_link = hosted_link;
       // For hosted link, also set completion redirect URI to return to our app
       if (!linkTokenConfig.hosted_link.completion_redirect_uri) {
-        linkTokenConfig.hosted_link.completion_redirect_uri = `http://localhost:${PORT}/hosted-link-complete`;
+        linkTokenConfig.hosted_link.completion_redirect_uri = `http://${HOST}:${PORT}/hosted-link-complete`;
       }
     }
 
@@ -1329,5 +1330,5 @@ app.post('/api/clear-token', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Plaid Test Kit running on http://localhost:${PORT}`);
+  console.log(`🚀 Plaid Test Kit running on http://{HOST}:${PORT}`);
 });

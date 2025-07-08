@@ -66,7 +66,7 @@ PORT=3000
 For OAuth testing:
 - Visit [dashboard.plaid.com](https://dashboard.plaid.com)
 - Go to Team Settings → API
-- Add `http://localhost:3000/oauth-redirect` to "Allowed OAuth redirect URIs"
+- Add `http://${HOST}:${PORT}/oauth-redirect` (where HOST and PORT are defined in the .env file for the project) to "Allowed OAuth redirect URIs" -- if these variables aren't set, the defaults of HOST=localhost and PORT=3000 are used
 - Save changes
 
 ### 4. Start the Server
@@ -184,7 +184,7 @@ Navigate to `http://localhost:3000`
 ### Common Issues
 
 1. **OAuth Redirect URI Mismatch**
-   - Ensure `http://localhost:3000/oauth-redirect` is added to your Plaid dashboard
+   - Ensure `http://${HOST}:${PORT}$/oauth-redirect` is added to your Plaid dashboard
    - Check that PORT matches your configuration
 
 2. **Token Exchange Errors**
