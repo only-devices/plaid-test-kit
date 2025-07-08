@@ -10,7 +10,22 @@ const cookieParser = require('cookie-parser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || 'localhost';
+
+// Railway-specific HOST configuration
+// In production (Railway), use the provided domain without port
+// In development, use localhost with port
+const getBaseUrl = () => {
+  if (process.env.RAILWAY_ENVIRONMENT) {
+    // Railway sets this environment variable
+    console.log('Railway environment detected, setting base URL accordingly');
+    return `https://${process.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_STATIC_URL}`;
+  } else {
+    // Development
+    const HOST = process.env.HOST || 'localhost';
+    return `http://${HOST}:${PORT}`;
+  }
+};
+
 // Check for required environment variables
 if (!process.env.SESSION_SECRET) {
   console.error('❌ FATAL ERROR: SESSION_SECRET environment variable is required for security');
@@ -741,14 +756,14 @@ app.post('/api/create-link-token', async (req, res) => {
     linkTokenConfig = { ...linkTokenConfig, ...requestOverrides };
 
     // Add OAuth redirect URI for OAuth support
-    linkTokenConfig.redirect_uri = `http://${HOST}:${PORT}/oauth-redirect`;
+    linkTokenConfig.redirect_uri = `${BASE_URL}/oauth-redirect`;
 
     // Handle hosted link mode
     if (hosted_link) {
       linkTokenConfig.hosted_link = hosted_link;
       // For hosted link, also set completion redirect URI to return to our app
       if (!linkTokenConfig.hosted_link.completion_redirect_uri) {
-        linkTokenConfig.hosted_link.completion_redirect_uri = `http://${HOST}:${PORT}/hosted-link-complete`;
+        linkTokenConfig.hosted_link.completion_redirect_uri = `${BASE_URL}/hosted-link-complete`;
       }
     }
 
@@ -1340,5 +1355,5 @@ app.post('/api/clear-token', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Plaid Test Kit running on http://{HOST}:${PORT}`);
+  cconsole.log(`🚀 Plaid Test Kit running on ${BASE_URL}`);
 });
