@@ -5,7 +5,6 @@ const { PlaidApi, PlaidEnvironments, Configuration, CountryCode } = require('pla
 
 // 🔐 NEW: Security middleware dependencies
 const session = require('express-session');
-const FileStore = require('session-file-store')(session);
 const path = require('path');
 const cookieParser = require('cookie-parser');
 
@@ -321,52 +320,7 @@ const validateApiKey = (req, res, next) => {
   }
 };
 
-// Enhanced /api/validate-key route with explicit session saving
-app.post('/api/validate-key', async (req, res) => {
-  const { clientId, secret, environment, remember } = req.body;
-
-  try {
-    // ... existing validation code ...
-
-    // If we get here, credentials are valid
-    const credentials = { clientId, secret, environment };
-    const encryptedCreds = encryptCredentials(credentials);
-
-    // Store encrypted credentials in session
-    req.session.plaidCredentials = encryptedCreds;
-
-    console.log('💾 Storing credentials in session');
-    console.log(`   Session ID: ${req.sessionID}`);
-    console.log(`   Remember me: ${remember ? 'yes' : 'no'}`);
-
-    // Optionally store in cookie for persistence
-    if (remember) {
-      res.cookie('plaidCredentials', encryptedCreds, {
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        httpOnly: true,
-        secure: false, // Set to false for Railway
-        sameSite: 'lax'
-      });
-      console.log('🍪 Also stored in persistent cookie');
-    }
-
-    // Explicitly save the session before redirecting
-    req.session.save((err) => {
-      if (err) {
-        console.error('❌ Session save error:', err);
-        return res.redirect('/auth?error=session_save_failed');
-      }
-
-      console.log('✅ Session saved successfully, redirecting to /');
-      console.log(`   User authenticated successfully with ${environment} environment`);
-      res.redirect('/');
-    });
-
-  } catch (error) {
-    console.error('Credential validation failed:', error.response?.data || error.message);
-    res.redirect('/auth?error=validation_failed');
-  }
-});
+app.use(validateApiKey);
 
 // 4. AUTH ROUTES (before static files)
 // 🔐 UPDATED: More secure auth page with better UX
