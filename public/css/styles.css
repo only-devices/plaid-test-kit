@@ -885,3 +885,16 @@ textarea:focus {
 .callout-banner .copy-btn.copied::before {
     content: '✓ ';
 }
+
+.link {
+    color: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.link:hover,
+.link:focus {
+    color: var(--plaid-purple);
+    text-decoration: underline;
+}
