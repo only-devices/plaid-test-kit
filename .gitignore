@@ -137,3 +137,6 @@ dist
 
 # Mac system files
 .DS_Store
+
+# sessions directory
+sessions/

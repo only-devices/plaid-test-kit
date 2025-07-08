@@ -2,10 +2,11 @@
 require('dotenv').config();
 const express = require('express');
 const { PlaidApi, PlaidEnvironments, Configuration, CountryCode } = require('plaid');
-const path = require('path');
 
 // 🔐 NEW: Security middleware dependencies
 const session = require('express-session');
+const FileStore = require('session-file-store')(session);
+const path = require('path');
 const cookieParser = require('cookie-parser');
 
 const app = express();
@@ -26,6 +27,9 @@ const getBaseUrl = () => {
   }
 };
 
+const BASE_URL = getBaseUrl();
+console.log(`🌍 Base URL configured as: ${BASE_URL}`);
+
 // Check for required environment variables
 if (!process.env.SESSION_SECRET) {
   console.error('❌ FATAL ERROR: SESSION_SECRET environment variable is required for security');
@@ -37,21 +41,42 @@ if (!process.env.SESSION_SECRET) {
 // 1. BASIC MIDDLEWARE
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// 🔐 NEW: Session and cookie support
 app.use(cookieParser());
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
+
+// Enhanced session configuration with debugging
+const sessionConfig = {
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  rolling: true, // Reset expiration on activity
   cookie: {
     secure: false,
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: 'lax'
   },
   name: 'plaid-test-kit-session'
-}));
+};
+
+// Use FileStore in production, MemoryStore in development
+if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT) {
+  const FileStore = require('session-file-store')(session);
+  sessionConfig.store = new FileStore({
+    path: path.join(__dirname, 'sessions'),
+    ttl: 86400, // 24 hours in seconds
+    retries: 0,
+    logFn: function () { }, // Disable file store logging
+    // Automatic cleanup options
+    reapInterval: 3600, // Clean up every hour (in seconds)
+    reapAsync: true,    // Don't block the event loop during cleanup
+    reapSyncFallback: false // Disable sync fallback for better performance
+  });
+  console.log('📁 Using FileStore for sessions (production)');
+} else {
+  console.log('🧠 Using MemoryStore for sessions (development)');
+}
+
+app.use(session(sessionConfig));
 
 // 2. UTILITY FUNCTIONS
 // 🔐 FIXED: Modern encryption utilities for storing credentials securely
@@ -72,10 +97,10 @@ function encryptCredentials(credentials) {
   try {
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(ALGORITHM, getEncryptionKey(), iv);
-    
+
     let encrypted = cipher.update(JSON.stringify(credentials), 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    
+
     // Return IV + encrypted data (separated by :)
     return iv.toString('hex') + ':' + encrypted;
   } catch (error) {
@@ -89,12 +114,12 @@ function decryptCredentials(encryptedData) {
     const textParts = encryptedData.split(':');
     const iv = Buffer.from(textParts.shift(), 'hex');
     const encryptedText = textParts.join(':');
-    
+
     const decipher = crypto.createDecipheriv(ALGORITHM, getEncryptionKey(), iv);
-    
+
     let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
-    
+
     return JSON.parse(decrypted);
   } catch (error) {
     console.error('Decryption error:', error);
@@ -196,16 +221,16 @@ function sendPageWithNavbar(res, filePath, navbarConfig = {}) {
   try {
     // Read the HTML file
     let htmlContent = fs.readFileSync(filePath, 'utf8');
-    
+
     // Generate navbar HTML
     const navbarHTML = generateNavbar(navbarConfig);
-    
+
     // Insert navbar after <body> tag
     htmlContent = htmlContent.replace(
-      /<body[^>]*>/i, 
+      /<body[^>]*>/i,
       `$&\n    ${navbarHTML}`
     );
-    
+
     res.send(htmlContent);
   } catch (error) {
     console.error('Error serving page with navbar:', error);
@@ -214,7 +239,7 @@ function sendPageWithNavbar(res, filePath, navbarConfig = {}) {
 }
 
 // 3. SECURITY MIDDLEWARE
-// 🔐 ENHANCED: Security middleware with improved redirect logic
+// Enhanced validateApiKey middleware with debugging
 const validateApiKey = (req, res, next) => {
   // Skip validation for static assets and auth endpoints
   if (req.path.includes('/css/') ||
@@ -226,12 +251,18 @@ const validateApiKey = (req, res, next) => {
     return next();
   }
 
+  console.log(`🔍 Validating access to ${req.path}`);
+  console.log(`   Session ID: ${req.sessionID || 'none'}`);
+  console.log(`   Session exists: ${!!req.session}`);
+  console.log(`   Session has credentials: ${!!req.session?.plaidCredentials}`);
+  console.log(`   Cookie has credentials: ${!!req.cookies?.plaidCredentials}`);
+
   // Check for encrypted credentials in session OR cookies
   const encryptedCreds = req.session?.plaidCredentials || req.cookies?.plaidCredentials;
 
   // 🔐 FORCE REDIRECT: No valid credentials found
   if (!encryptedCreds) {
-    console.log(`Access denied to ${req.path} - no credentials found, redirecting to /auth`);
+    console.log(`❌ Access denied to ${req.path} - no credentials found, redirecting to /auth`);
 
     if (req.accepts('html')) {
       return res.redirect('/auth');
@@ -256,17 +287,31 @@ const validateApiKey = (req, res, next) => {
     // If credentials came from cookie but not session, restore to session
     if (!req.session?.plaidCredentials && req.cookies?.plaidCredentials) {
       req.session.plaidCredentials = encryptedCreds;
-      console.log('Restored credentials from cookie to session');
+      console.log('✅ Restored credentials from cookie to session');
+
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error('❌ Failed to save session:', err);
+        } else {
+          console.log('✅ Session saved successfully');
+        }
+      });
     }
 
+    console.log(`✅ Access granted to ${req.path}`);
     next();
 
   } catch (error) {
     // 🔐 FORCE REDIRECT: Invalid or corrupted credentials
-    console.log(`Access denied to ${req.path} - invalid credentials:`, error.message);
+    console.log(`❌ Access denied to ${req.path} - invalid credentials:`, error.message);
 
     // Clean up corrupted data
-    req.session?.destroy();
+    if (req.session) {
+      req.session.destroy((err) => {
+        if (err) console.error('Session destruction error:', err);
+      });
+    }
     res.clearCookie('plaidCredentials');
 
     if (req.accepts('html')) {
@@ -276,8 +321,52 @@ const validateApiKey = (req, res, next) => {
   }
 };
 
-// 🔐 NEW: Apply security middleware to all routes except auth
-app.use(validateApiKey);
+// Enhanced /api/validate-key route with explicit session saving
+app.post('/api/validate-key', async (req, res) => {
+  const { clientId, secret, environment, remember } = req.body;
+
+  try {
+    // ... existing validation code ...
+
+    // If we get here, credentials are valid
+    const credentials = { clientId, secret, environment };
+    const encryptedCreds = encryptCredentials(credentials);
+
+    // Store encrypted credentials in session
+    req.session.plaidCredentials = encryptedCreds;
+
+    console.log('💾 Storing credentials in session');
+    console.log(`   Session ID: ${req.sessionID}`);
+    console.log(`   Remember me: ${remember ? 'yes' : 'no'}`);
+
+    // Optionally store in cookie for persistence
+    if (remember) {
+      res.cookie('plaidCredentials', encryptedCreds, {
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        httpOnly: true,
+        secure: false, // Set to false for Railway
+        sameSite: 'lax'
+      });
+      console.log('🍪 Also stored in persistent cookie');
+    }
+
+    // Explicitly save the session before redirecting
+    req.session.save((err) => {
+      if (err) {
+        console.error('❌ Session save error:', err);
+        return res.redirect('/auth?error=session_save_failed');
+      }
+
+      console.log('✅ Session saved successfully, redirecting to /');
+      console.log(`   User authenticated successfully with ${environment} environment`);
+      res.redirect('/');
+    });
+
+  } catch (error) {
+    console.error('Credential validation failed:', error.response?.data || error.message);
+    res.redirect('/auth?error=validation_failed');
+  }
+});
 
 // 4. AUTH ROUTES (before static files)
 // 🔐 UPDATED: More secure auth page with better UX
@@ -1355,5 +1444,5 @@ app.post('/api/clear-token', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  cconsole.log(`🚀 Plaid Test Kit running on ${BASE_URL}`);
+  console.log(`🚀 Plaid Test Kit running on ${BASE_URL}`);
 });
