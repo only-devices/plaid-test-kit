@@ -244,6 +244,7 @@ const validateApiKey = (req, res, next) => {
   if (req.path.includes('/css/') ||
     req.path.includes('/js/') ||
     req.path.includes('/assets/') ||
+    req.path === '/health' ||
     req.path === '/auth' ||
     req.path === '/api/validate-key' ||
     req.path === '/api/logout') {
@@ -323,6 +324,25 @@ const validateApiKey = (req, res, next) => {
 app.use(validateApiKey);
 
 // 4. AUTH ROUTES (before static files)
+// Health check endpoint (public for Railway health checks)
+const rateLimit = require('express-rate-limit');
+
+const healthLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 30 // limit each IP to 30 requests per minute
+});
+
+app.get('/health', healthLimiter, (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    environment: 'sandbox',
+    version: require('./package.json').version || '2.0.0',
+    node_version: process.version
+  });
+});
+
 // 🔐 UPDATED: More secure auth page with better UX
 app.get('/auth', (req, res) => {
   const error = req.query.error;
@@ -564,7 +584,7 @@ app.get('/link-config.html', (req, res) => {
 // Helper endpoint to return BASE_URL variable
 app.get('/config.js', (req, res) => {
   res.type('application/javascript');
-  res.send(`window.BASE_URL = "${process.env.BASE_URL || `http://localhost:${PORT}`}"`);
+  res.send(`window.BASE_URL = "${BASE_URL}"`);
 });
 
 // Hosted Link completion handler
@@ -722,21 +742,6 @@ app.get('/login-required', (req, res) => {
   `);
 });
 
-// Health check
-app.get('/health', (req, res) => {
-  console.log('Health check - accessToken exists:', !!accessToken, 'Value:', accessToken ? 'present' : 'null');
-
-  res.json({
-    status: 'OK',
-    hasAccessToken: !!accessToken,
-    access_token: accessToken || null,
-    has_custom_link_config: !!customLinkConfig,
-    custom_link_config: customLinkConfig || null,
-    environment: 'sandbox',
-    timestamp: new Date().toISOString()
-  });
-});
-
 // 7. STATIC FILES LAST (after all GET routes)
 app.use(express.static('public', {
   setHeaders: (res, path) => {
@@ -755,6 +760,20 @@ let accessToken = null;
 let customLinkConfig = null;
 
 // 8. API POST ROUTES (order doesn't matter for these)
+// Status endpoint to check API access and configuration
+app.get('/api/status', (req, res) => {
+  res.json({
+    status: 'OK',
+    hasAccessToken: !!accessToken,
+    has_custom_link_config: !!customLinkConfig,
+    custom_link_config: customLinkConfig || null,
+    environment: 'sandbox',
+    authenticated: !!(req.plaidClientId && req.plaidSecret),
+    user_environment: req.plaidEnvironment || 'unknown',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Create link token for Plaid Link with custom configuration support
 app.post('/api/create-link-token', async (req, res) => {
   try {

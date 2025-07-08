@@ -82,8 +82,8 @@ class ApiClient {
     }
 
     // Health Check
-    async getHealth() {
-        return this.request('/health');
+    async getStatus() {
+    return this.request('/api/status');
     }
 }
 
