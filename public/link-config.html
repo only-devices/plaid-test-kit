@@ -165,19 +165,10 @@
             border: 1px solid #fecaca;
         }
 
-        .config-preview {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 16px;
-            margin-top: 16px;
-        }
-
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
-            margin-bottom: 16px;
         }
 
         .form-group-inline {
@@ -260,50 +251,62 @@
             </div>
         </div>
 
-        <div class="form-group">
-            <label>Link Customization Name</label>
-            <input type="text" id="linkCustomizationName" placeholder="e.g., default, custom_theme" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <div class="help-text">The name of the Link customization to use (optional). Must match a customization created in your Plaid Dashboard.</div>
-        </div>
-
         <div class="form-row">
             <div class="form-group">
-                <label>Client Name</label>
+                <label>Link Customization Name</label>
+                <input type="text" id="linkCustomizationName" placeholder="e.g. default, custom_theme" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">The name of the Link customization to use (optional). Must match a customization created in your Plaid Dashboard.</div>
+            </div>
+            <div class="form-group">
+                <label>Client Name <span class="required-badge">Required</span></label>
                 <input type="text" id="clientName" value="Plaid Test Kit" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <div class="help-text">The name of your application as it will be displayed to users</div>
             </div>
             <div class="form-group">
-                <label>Language</label>
-                <select id="language" class="select-small" style="width: 100%; padding: 12px;">
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="nl">Dutch</option>
-                </select>
+                <label>Language <span class="required-badge">Required</span></label>
+                <input type="text" id="language" value="en" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">
+                    The language that Link should be displayed in. See 
+                    <a href="https://plaid.com/docs/api/link/#link-token-create-request-language" class="link" target="_blank">
+                        supported languages
+                    </a>
+                </div>
+            </div>
+            <div class="form-group">
+            <label>Country Codes <span class="required-badge">Required</span></label>
+            <input type="text" id="countryCodesInput" value="US" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <div class="help-text">
+                Enter one or more country codes, separated by commas 
+                <a href="https://plaid.com/docs/api/link/#link-token-create-request-country-codes" class="link" target="_blank">Learn more</a>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- User Configuration -->
+    <div class="config-section">
+        <div class="config-header">
+            <div>
+                <h3 style="margin: 0; color: #1e293b;">User Configuration</h3>
+                <p class="section-description" style="margin: 4px 0 0 0;">Configure user-specific details such as client user ID and phone number.</p>
             </div>
         </div>
 
-        <div class="form-group">
-            <label>Country Codes</label>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px;">
-                <label class="form-group-inline" style="margin: 0;">
-                    <input type="checkbox" class="country-checkbox" value="US" checked> United States
-                </label>
-                <label class="form-group-inline" style="margin: 0;">
-                    <input type="checkbox" class="country-checkbox" value="CA"> Canada
-                </label>
-                <label class="form-group-inline" style="margin: 0;">
-                    <input type="checkbox" class="country-checkbox" value="GB"> United Kingdom
-                </label>
-                <label class="form-group-inline" style="margin: 0;">
-                    <input type="checkbox" class="country-checkbox" value="FR"> France
-                </label>
-                <label class="form-group-inline" style="margin: 0;">
-                    <input type="checkbox" class="country-checkbox" value="ES"> Spain
-                </label>
-                <label class="form-group-inline" style="margin: 0;">
-                    <input type="checkbox" class="country-checkbox" value="NL"> Netherlands
-                </label>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Client User ID <span class="required-badge">Required</span></label>
+                <input type="text" id="clientUserId" placeholder="username864" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">A customer-generated unique identifier for the end user</div>
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" id="userPhoneNumber" placeholder="+1 415-555-0010" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">
+                    The phone number of the user. Different phone numbers in Sandbox will lead to 
+                    <a href="https://plaid.com/docs/link/returning-user/#testing-in-sandbox" class="link" target="_blank">
+                        different returning user experiences
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -327,7 +330,7 @@
                 <li><strong>Additional Consented:</strong> Products in <code>additional_consented_products</code> - products the user has consented to but may not be actively requested</li>
             </ul>
             <p style="margin: 8px 0 0 0; font-weight: 500; color: #dc2626;">
-                ⚠️ Each product can only be checked in ONE column. Checking a different column will automatically uncheck the others.
+                ⚠️ Each product can only be selected in one column. Selecting a different column for the same product will automatically uncheck the others.
             </p>
         </div>
 
@@ -349,53 +352,29 @@
         </div>
     </div>
 
-    <!-- Configuration Preview -->
-    <div class="config-section">
-        <div class="config-header">
-            <h3 style="margin: 0; color: #1e293b;">Configuration Preview</h3>
+        <!-- Advanced JSON Configuration -->
+<div class="config-section">
+    <div class="config-header">
+        <div>
+            <h3 style="margin: 0; color: #1e293b;">Advanced Configuration</h3>
+            <p class="section-description" style="margin: 4px 0 0 0;">Enable manual Link token configuration using JSON by using the toggle to the right. This will override the basic configuration above.</p>
         </div>
-        <div class="config-preview">
-            <pre id="configPreview" class="terminal">// Configuration will appear here</pre>
+        <div class="config-toggle">
+            <div class="toggle-switch" id="advancedToggle"></div>
         </div>
     </div>
 
-    <!-- Advanced JSON Configuration -->
-    <div class="config-section">
-        <div class="config-header">
-            <div>
-                <h3 style="margin: 0; color: #1e293b;">Advanced Configuration</h3>
-                <p class="section-description" style="margin: 4px 0 0 0;">Enable manual Link token configuration using JSON by using the toggle to the right. This will override the basic configuration above.</p>
-            </div>
-            <div class="config-toggle">
-                <div class="toggle-switch" id="advancedToggle"></div>
-            </div>
+    <div id="advancedSection" class="disabled-section">
+        <div class="form-group">
+            <label>Link Token Create (JSON)</label>
+            <textarea 
+                id="jsonConfig" 
+                class="json-editor"></textarea>
         </div>
-
-        <div id="advancedSection" class="disabled-section">
-            <div class="form-group">
-                <label>Link Token Create (JSON)</label>
-                <textarea 
-                    id="jsonConfig" 
-                    class="json-editor" 
-                    placeholder='{
-  "webhook": "https://your-webhook-url.com/webhook",
-  "link_customization_name": "default",
-  "account_filters": {
-    "depository": {
-      "account_subtypes": ["checking", "savings"]
-    }
-  },
-  "auth": {
-    "automated_microdeposits_enabled": true,
-    "instant_match_enabled": true
-  },
-  "additional_consented_products": ["transactions", "identity"]
-}'></textarea>
-                <div id="jsonStatus" class="json-status json-valid">JSON is valid</div>
-                <div class="help-text">
-                    Add any additional Link token parameters as JSON. See <a href="https://plaid.com/docs/api/link/#linktokencreate" target="_blank" style="color: #6366f1;">Plaid documentation</a> for all available options.
-                </div>
-            </div>
+        </div>
+        <div id="jsonStatus" class="json-status json-valid">JSON is valid</div>
+        <div class="help-text">
+            Add any additional Link token parameters as JSON. See <a href="https://plaid.com/docs/api/link/#linktokencreate" target="_blank" style="color: #6366f1;">Plaid documentation</a> for all available options.
         </div>
     </div>
 

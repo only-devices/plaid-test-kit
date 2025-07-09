@@ -135,7 +135,7 @@ class StartPage {
 
     async checkExistingToken() {
         try {
-            const health = await window.apiClient.getHealth();
+            const health = await window.apiClient.getStatus();
             if (health.hasAccessToken) {
                 this.currentAccessToken = health.access_token || '(server token)';
                 this.showExistingTokenBanner();
@@ -157,7 +157,7 @@ class StartPage {
             }
 
             // Then check server for custom configuration
-            const health = await window.apiClient.getHealth();
+            const health = await window.apiClient.getStatus();
             if (health.has_custom_link_config && health.custom_link_config) {
                 this.customConfig = health.custom_link_config;
                 this.showConfigurationBanner();
@@ -325,7 +325,7 @@ class StartPage {
 
     async copyExistingToken() {
         try {
-            const health = await window.apiClient.getHealth();
+            const health = await window.apiClient.getStatus();
             console.log('Health response:', health); // Debug log
 
             if (health.access_token) {

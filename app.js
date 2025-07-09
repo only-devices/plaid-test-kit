@@ -381,14 +381,14 @@ app.get('/auth', (req, res) => {
         <form method="POST" action="/api/validate-key" id="authForm">
           <div class="form-group">
             <label>Plaid Client ID:</label>
-            <input type="text" name="clientId" id="clientId" placeholder="Enter your Plaid Client ID" 
+            <input type="text" name="clientId" id="clientId" autocomplete="clientID" placeholder="Enter your Plaid Client ID" 
                    required 
                    style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 14px;">
           </div>
           
           <div class="form-group">
             <label>Plaid Secret:</label>
-            <input type="password" name="secret" id="secret" placeholder="Enter your Plaid Secret" 
+            <input type="password" name="secret" id="secret" autocomplete="secret" placeholder="Enter your Plaid Secret" 
                    required autocomplete="new-password"
                    style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 14px;">
           </div>

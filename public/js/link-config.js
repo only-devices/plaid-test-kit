@@ -13,14 +13,14 @@ const PLAID_PRODUCTS = [
         description: 'Access to account balances'
     },
     {
-        id: 'transactions',
-        name: 'Transactions',
-        description: 'Access to account transactions and history'
-    },
-    {
         id: 'identity',
         name: 'Identity',
         description: 'Access to identity information like names, emails, phone numbers, and addresses'
+    },
+    {
+        id: 'transactions',
+        name: 'Transactions',
+        description: 'Access to account transactions and history'
     },
     {
         id: 'assets',
@@ -45,7 +45,6 @@ class LinkTokenConfig {
         this.renderProductsTable();
         this.setupEventListeners();
         await this.loadExistingConfig();
-        this.updatePreview();
     }
 
     getDefaultConfig() {
@@ -53,13 +52,14 @@ class LinkTokenConfig {
             products: ['auth'],
             optional_products: [],
             required_if_supported_products: [],
-            additional_consented_products: [], // NEW: Add support for additional consented products
+            additional_consented_products: [],
             client_name: 'Plaid Test Kit',
-            link_customization_name: '', // NEW: Add support for link customization name
+            link_customization_name: '',
             country_codes: ['US'],
             language: 'en',
             user: {
-                client_user_id: 'test-kit-user-' + Date.now()
+                client_user_id: 'test-kit-user-' + Date.now(),
+                phone_number: '',
             }
         };
     }
@@ -85,7 +85,7 @@ class LinkTokenConfig {
             }
 
             // Then check server
-            const response = await window.apiClient.getHealth();
+            const response = await window.apiClient.getStatus();
             if (response.has_custom_link_config && response.custom_link_config) {
                 this.config = { ...this.getDefaultConfig(), ...response.custom_link_config };
                 this.updateUIFromConfig();
@@ -118,10 +118,12 @@ class LinkTokenConfig {
         document.getElementById('linkCustomizationName').value = this.config.link_customization_name || '';
         document.getElementById('language').value = this.config.language || 'en';
 
+        // Update user inputs
+        document.getElementById('clientUserId').value = this.config.user.client_user_id || '';
+        document.getElementById('phoneNumber').value = this.config.user.phone_number || '';
+
         // Update country checkboxes
-        document.querySelectorAll('.country-checkbox').forEach(cb => {
-            cb.checked = this.config.country_codes.includes(cb.value);
-        });
+        document.getElementById('countryCodesInput').value = (this.config.country_codes || []).join(',');
 
         // Update products table
         this.renderProductsTable();
@@ -133,7 +135,7 @@ class LinkTokenConfig {
             console.error('Products table body not found');
             return;
         }
-        
+
         tbody.innerHTML = '';
 
         PLAID_PRODUCTS.forEach(product => {
@@ -176,25 +178,33 @@ class LinkTokenConfig {
                 this.handleProductRequiredIfSupported(e.target);
             } else if (e.target.matches('.product-additional-consented')) {
                 this.handleProductAdditionalConsented(e.target); // NEW: Handle additional consented products
-            } else if (e.target.matches('.country-checkbox')) {
-                this.updateCountryCodes();
             }
         });
 
         // Basic config inputs
         document.getElementById('clientName').addEventListener('input', () => {
             this.config.client_name = document.getElementById('clientName').value;
-            this.updatePreview();
         });
 
         document.getElementById('linkCustomizationName').addEventListener('input', () => {
             this.config.link_customization_name = document.getElementById('linkCustomizationName').value;
-            this.updatePreview();
         });
 
         document.getElementById('language').addEventListener('change', () => {
             this.config.language = document.getElementById('language').value;
-            this.updatePreview();
+        });
+
+        document.getElementById('countryCodesInput').addEventListener('input', () => {
+            this.updateCountryCodesFromInput();
+        });
+
+        // User inputs
+        document.getElementById('clientUserId').addEventListener('input', () => {
+            this.config.user.client_user_id = document.getElementById('clientUserId').value;
+        });
+        document.getElementById('userPhoneNumber').addEventListener('input', () => {
+            const input = document.getElementById('userPhoneNumber').value;
+            this.config.user.phone_number = this.autoDetectE164(input);
         });
 
         // JSON editor
@@ -224,13 +234,10 @@ class LinkTokenConfig {
         if (this.isAdvancedMode) {
             toggle.classList.add('active');
             section.classList.remove('disabled-section');
-            this.populateJSONFromConfig();
         } else {
             toggle.classList.remove('active');
             section.classList.add('disabled-section');
         }
-
-        this.updatePreview();
     }
 
     // Helper method to remove product from all arrays except the specified one
@@ -269,10 +276,9 @@ class LinkTokenConfig {
             // Remove from products array
             this.config.products = this.config.products.filter(p => p !== product);
         }
-        
+
         // Update all checkboxes for this product
         this.updateProductCheckboxes(product);
-        this.updatePreview();
     }
 
     handleProductOptional(checkbox) {
@@ -287,10 +293,9 @@ class LinkTokenConfig {
             // Remove from optional_products array
             this.config.optional_products = this.config.optional_products.filter(p => p !== product);
         }
-        
+
         // Update all checkboxes for this product
         this.updateProductCheckboxes(product);
-        this.updatePreview();
     }
 
     handleProductRequiredIfSupported(checkbox) {
@@ -305,10 +310,9 @@ class LinkTokenConfig {
             // Remove from required_if_supported_products array
             this.config.required_if_supported_products = this.config.required_if_supported_products.filter(p => p !== product);
         }
-        
+
         // Update all checkboxes for this product
         this.updateProductCheckboxes(product);
-        this.updatePreview();
     }
 
     // Handle additional consented products with mutual exclusivity
@@ -324,16 +328,95 @@ class LinkTokenConfig {
             // Remove from additional_consented_products array
             this.config.additional_consented_products = this.config.additional_consented_products.filter(p => p !== product);
         }
-        
+
         // Update all checkboxes for this product
         this.updateProductCheckboxes(product);
-        this.updatePreview();
     }
 
-    updateCountryCodes() {
-        const checkboxes = document.querySelectorAll('.country-checkbox:checked');
-        this.config.country_codes = Array.from(checkboxes).map(cb => cb.value);
-        this.updatePreview();
+    updateCountryCodesFromInput() {
+        const input = document.getElementById('countryCodesInput').value;
+        this.config.country_codes = input
+            .split(',')
+            .map(code => code.trim().toUpperCase())
+            .filter(code => code.length > 0);
+    }
+
+
+
+    autoDetectE164(phoneNumber, fallbackCountryCode = '1') {
+        // Country code patterns and rules
+        const COUNTRY_CODES = {
+            // North America (NANP)
+            '1': { minLength: 10, maxLength: 10, pattern: /^1?[2-9]\d{2}[2-9]\d{6}$/ },
+
+            // Major country codes with their typical lengths
+            '44': { minLength: 10, maxLength: 10, pattern: /^44[1-9]\d{8,9}$/ }, // UK
+            '33': { minLength: 9, maxLength: 9, pattern: /^33[1-9]\d{8}$/ },   // France
+            '49': { minLength: 10, maxLength: 12, pattern: /^49[1-9]\d{9,11}$/ }, // Germany
+            '39': { minLength: 9, maxLength: 11, pattern: /^39\d{9,11}$/ },    // Italy
+            '34': { minLength: 9, maxLength: 9, pattern: /^34[6-9]\d{8}$/ },   // Spain
+            '31': { minLength: 9, maxLength: 9, pattern: /^31[1-9]\d{8}$/ },   // Netherlands
+            '7': { minLength: 10, maxLength: 10, pattern: /^7[3-9]\d{9}$/ },   // Russia/Kazakhstan
+            '86': { minLength: 11, maxLength: 11, pattern: /^86[1]\d{10}$/ },  // China
+            '81': { minLength: 10, maxLength: 11, pattern: /^81[1-9]\d{8,9}$/ }, // Japan
+            '91': { minLength: 10, maxLength: 10, pattern: /^91[6-9]\d{9}$/ }, // India
+            '61': { minLength: 9, maxLength: 9, pattern: /^61[2-4689]\d{8}$/ }, // Australia
+            '55': { minLength: 10, maxLength: 11, pattern: /^55[1-9]\d{8,9}$/ }, // Brazil
+            '52': { minLength: 10, maxLength: 10, pattern: /^52[1-9]\d{9}$/ }, // Mexico
+        };
+
+        // Remove all non-digit characters
+        const digitsOnly = phoneNumber.replace(/\D/g, '');
+
+        // If empty, return empty string
+        if (!digitsOnly) {
+            return '';
+        }
+
+        // Try to detect country code by testing patterns
+        for (const [countryCode, rules] of Object.entries(COUNTRY_CODES)) {
+            // Check if digits start with this country code
+            if (digitsOnly.startsWith(countryCode)) {
+                const nationalNumber = digitsOnly.substring(countryCode.length);
+
+                // Check if the remaining digits fit the pattern for this country
+                if (nationalNumber.length >= rules.minLength &&
+                    nationalNumber.length <= rules.maxLength) {
+
+                    const fullNumber = countryCode + nationalNumber;
+                    if (rules.pattern.test(fullNumber)) {
+                        console.log(`✓ Detected country code: +${countryCode}`);
+                        return '+' + fullNumber;
+                    }
+                }
+            }
+
+            // Also check if the number WITHOUT country code fits the pattern
+            if (digitsOnly.length >= rules.minLength &&
+                digitsOnly.length <= rules.maxLength) {
+
+                const testNumber = countryCode + digitsOnly;
+                if (rules.pattern.test(testNumber)) {
+                    console.log(`✓ Auto-added country code: +${countryCode}`);
+                    return '+' + testNumber;
+                }
+            }
+        }
+
+        // Fallback: use simple length-based detection
+        if (digitsOnly.length >= 11) {
+            // Assume it already has a country code
+            console.log(`Using as-is (${digitsOnly.length} digits)`);
+            return '+' + digitsOnly;
+        } else if (digitsOnly.length === 10) {
+            // Most likely needs country code - use fallback
+            console.log(`Adding fallback country code: +${fallbackCountryCode}`);
+            return '+' + fallbackCountryCode + digitsOnly;
+        } else {
+            // Just add + and hope for the best
+            console.log(`Uncertain format, adding + prefix`);
+            return '+' + digitsOnly;
+        }
     }
 
     populateJSONFromConfig() {
@@ -343,6 +426,7 @@ class LinkTokenConfig {
         if (jsonConfig.required_if_supported_products.length === 0) delete jsonConfig.required_if_supported_products;
         if (jsonConfig.additional_consented_products.length === 0) delete jsonConfig.additional_consented_products;
         if (!jsonConfig.link_customization_name || jsonConfig.link_customization_name.trim() === '') delete jsonConfig.link_customization_name;
+        if (!jsonConfig.user.phone_number || jsonConfig.user.phone_number.trim() === '') delete jsonConfig.user.phone_number;
 
         document.getElementById('jsonConfig').value = JSON.stringify(jsonConfig, null, 2);
         this.validateAndUpdateJSON();
@@ -359,21 +443,11 @@ class LinkTokenConfig {
 
             if (this.isAdvancedMode) {
                 this.config = { ...this.getDefaultConfig(), ...parsed };
-                this.updatePreview();
             }
         } catch (error) {
             statusEl.textContent = `Invalid JSON: ${error.message}`;
             statusEl.className = 'json-status json-invalid';
         }
-    }
-
-    updatePreview() {
-        const preview = document.getElementById('configPreview');
-        const configToShow = this.isAdvancedMode
-            ? this.getAdvancedConfig()
-            : this.getBasicConfig();
-
-        preview.innerHTML = UIUtils.syntaxHighlight(configToShow);
     }
 
     getBasicConfig() {
@@ -384,6 +458,7 @@ class LinkTokenConfig {
         if (config.required_if_supported_products.length === 0) delete config.required_if_supported_products;
         if (config.additional_consented_products.length === 0) delete config.additional_consented_products;
         if (!config.link_customization_name || config.link_customization_name.trim() === '') delete config.link_customization_name;
+        if (!config.user.phone_number || config.user.phone_number.trim() === '') delete config.user.phone_number;
 
         return config;
     }
@@ -479,6 +554,8 @@ class LinkTokenConfig {
             document.getElementById('clientName').value = this.config.client_name;
             document.getElementById('linkCustomizationName').value = this.config.link_customization_name || '';
             document.getElementById('language').value = this.config.language;
+            document.getElementById('clientUserId').value = this.config.user.client_user_id || 'test-kit-user-' + Date.now();
+            document.getElementById('userPhoneNumber').value = this.config.user.phone_number || '';
 
             // Reset country checkboxes
             document.querySelectorAll('.country-checkbox').forEach(cb => {
@@ -491,7 +568,6 @@ class LinkTokenConfig {
             // Clear JSON
             document.getElementById('jsonConfig').value = '';
 
-            this.updatePreview();
             UIUtils.showStatus('configStatus', 'Configuration reset to defaults', 'info');
             UIUtils.showNotification('Configuration reset to defaults (both local and server)', 'info');
         } catch (error) {
@@ -527,6 +603,151 @@ function getAvailablePresets() {
     }
     return [];
 }
+
+function autoResizeTextarea(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+
+    const maxHeight = 500;
+    if (textarea.scrollHeight > maxHeight) {
+        textarea.style.height = maxHeight + 'px';
+        textarea.style.overflowY = 'auto';
+    } else {
+        textarea.style.overflowY = 'hidden';
+    }
+}
+
+// Robust initialization that handles multiple loading scenarios
+function initializeAutoResize() {
+
+
+    const jsonConfig = document.getElementById('jsonConfig');
+
+    if (jsonConfig) {
+
+
+        // Remove any existing event listeners to prevent duplicates
+        jsonConfig.removeEventListener('input', handleInput);
+        jsonConfig.removeEventListener('paste', handlePaste);
+        jsonConfig.removeEventListener('keyup', handleKeyup);
+
+        // Add event listeners
+        jsonConfig.addEventListener('input', handleInput);
+        jsonConfig.addEventListener('paste', handlePaste);
+        jsonConfig.addEventListener('keyup', handleKeyup);
+
+        // Load current configuration into the textarea
+        if (linkTokenConfig.config) {
+            jsonConfig.value = JSON.stringify(linkTokenConfig.config, null, 2);
+        }
+
+        // Initial resize
+        autoResizeTextarea(jsonConfig);
+
+
+        return true;
+    } else {
+        console.log('jsonConfig element not found, will retry...');
+        return false;
+    }
+}
+
+function setupAutoResize() {
+
+
+    // If DOM is already ready, initialize immediately
+    if (document.readyState === 'loading') {
+        // DOM is still loading, wait for DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', initializeAutoResize);
+    } else {
+        // DOM is already loaded, initialize now
+        if (!initializeAutoResize()) {
+            // If element not found, try again with a short delay
+            setTimeout(initializeAutoResize, 50);
+        }
+    }
+
+    // Backup: try again when window fully loads
+    window.addEventListener('load', function () {
+        console.log('Window load event fired');
+        initializeAutoResize();
+    });
+
+    // Additional backup: try periodically until element is found
+    let retryCount = 0;
+    const maxRetries = 20; // Try for up to 2 seconds
+    const retryInterval = setInterval(() => {
+        retryCount++;
+        console.log(`Retry attempt ${retryCount}/${maxRetries}`);
+
+        if (initializeAutoResize() || retryCount >= maxRetries) {
+            clearInterval(retryInterval);
+            if (retryCount >= maxRetries) {
+                console.error('Failed to find jsonConfig element after maximum retries');
+            }
+        }
+    }, 100);
+}
+
+// Toggle functionality
+function setupToggle() {
+    const advancedToggle = document.getElementById('advancedToggle');
+    const advancedSection = document.getElementById('advancedSection');
+    const jsonConfig = document.getElementById('jsonConfig');
+
+    if (advancedToggle && advancedSection) {
+        advancedToggle.addEventListener('click', function () {
+
+
+            this.classList.toggle('active');
+            advancedSection.classList.toggle('disabled-section');
+
+            // Always refresh textarea content and resize when toggle is clicked
+            if (jsonConfig) {
+                // Refresh content from current config
+                if (linkTokenConfig.config) {
+
+                    jsonConfig.value = JSON.stringify(linkTokenConfig.config, null, 2);
+                } else {
+                    console.log('No linkTokenConfig.config found, using placeholder');
+                    // Fallback to placeholder if no config exists
+                    jsonConfig.value = JSON.stringify({
+                        "webhook": "https://your-webhook-url.com/webhook",
+                        "link_customization_name": "default",
+                        "products": ["transactions"],
+                        "country_codes": ["US"],
+                        "language": "en",
+                        "user": {
+                            "client_user_id": "user_123"
+                        }
+                    }, null, 2);
+                }
+
+                // Always auto-resize after content update
+                autoResizeTextarea(jsonConfig);
+                console.log('Textarea refreshed and resized');
+            }
+        });
+    }
+}
+
+// Event handler functions
+function handleInput(event) {
+
+    autoResizeTextarea(event.target);
+}
+
+function handlePaste(event) {
+
+    setTimeout(() => autoResizeTextarea(event.target), 0);
+}
+
+function handleKeyup(event) {
+    autoResizeTextarea(event.target);
+}
+
+setupAutoResize();
+setupToggle();
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {

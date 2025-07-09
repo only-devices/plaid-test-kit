@@ -34,7 +34,8 @@ body {
 
 /* Typography */
 h1 {
-    font-size: 2.5rem;
+    font-size: 2.25rem;
+    /* was 2.5rem */
     font-weight: 700;
     background: linear-gradient(135deg, var(--plaid-purple) 0%, var(--plaid-blue) 100%);
     -webkit-background-clip: text;
@@ -44,21 +45,24 @@ h1 {
 }
 
 h2 {
-    font-size: 1.875rem;
+    font-size: 1.6875rem;
+    /* was 1.875rem */
     font-weight: 600;
     color: var(--plaid-dark);
     margin-bottom: 0.75rem;
 }
 
 h3 {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
+    /* was 1.25rem */
     font-weight: 600;
     color: var(--plaid-dark);
     margin-bottom: 0.5rem;
 }
 
 h4 {
-    font-size: 1.125rem;
+    font-size: 1.0125rem;
+    /* was 1.125rem */
     font-weight: 600;
     color: var(--plaid-dark);
     margin-bottom: 0.5rem;
@@ -81,7 +85,8 @@ p {
 }
 
 .header p {
-    font-size: 1.125rem;
+    font-size: 1.0125rem;
+    /* was 1.125rem */
     color: var(--plaid-gray);
     margin-top: 8px;
 }
@@ -115,7 +120,8 @@ p {
 }
 
 .navbar-title {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
+    /* was 1.5rem */
     font-weight: 700;
     background: linear-gradient(135deg, var(--plaid-purple) 0%, var(--plaid-blue) 100%);
     -webkit-background-clip: text;
@@ -125,7 +131,8 @@ p {
 }
 
 .navbar-subtitle {
-    font-size: 0.875rem;
+    font-size: 0.7875rem;
+    /* was 0.875rem */
     color: var(--plaid-gray);
     margin: 0;
     font-weight: 400;
@@ -145,7 +152,8 @@ p {
     border-radius: 8px;
     transition: all 0.2s ease;
     font-weight: 500;
-    font-size: 14px;
+    font-size: 13px;
+    /* was 14px */
     border: 1px solid transparent;
     cursor: pointer;
 }
@@ -237,7 +245,8 @@ p {
     }
 
     .navbar-title {
-        font-size: 1.25rem;
+        font-size: 1.125rem;
+        /* was 1.25rem */
     }
 }
 
@@ -251,7 +260,8 @@ label {
     margin-bottom: 8px;
     font-weight: 600;
     color: var(--plaid-dark);
-    font-size: 0.875rem;
+    font-size: 0.7875rem;
+    /* was 0.875rem */
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -266,7 +276,8 @@ textarea {
     padding: 16px;
     border: 2px solid var(--plaid-border);
     border-radius: var(--border-radius);
-    font-size: 16px;
+    font-size: 15px;
+    /* was 16px */
     font-family: var(--font-sans);
     transition: all 0.2s ease;
     background: white;
@@ -294,7 +305,8 @@ textarea:focus {
     border: none;
     border-radius: var(--border-radius);
     cursor: pointer;
-    font-size: 16px;
+    font-size: 15px;
+    /* was 16px */
     font-weight: 600;
     text-decoration: none;
     text-align: center;
@@ -360,7 +372,8 @@ textarea:focus {
 
 .btn-large {
     padding: 20px 32px;
-    font-size: 18px;
+    font-size: 17px;
+    /* was 18px */
     min-width: 160px;
 }
 
@@ -408,7 +421,8 @@ textarea:focus {
     border: 1px solid var(--plaid-border);
     border-radius: var(--border-radius);
     min-height: 24px;
-    font-size: 14px;
+    font-size: 13px;
+    /* was 14px */
     word-break: break-word;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
 }
@@ -419,7 +433,8 @@ textarea:focus {
     border: 2px solid var(--plaid-blue);
     border-radius: var(--border-radius);
     min-height: 24px;
-    font-size: 20px;
+    font-size: 18px;
+    /* was 20px */
     text-align: center;
     font-weight: 700;
     color: var(--plaid-blue);
@@ -428,7 +443,8 @@ textarea:focus {
 .boolean-field {
     padding: 8px 16px;
     border-radius: 20px;
-    font-size: 12px;
+    font-size: 11px;
+    /* was 12px */
     font-weight: 600;
     margin: 4px;
     display: inline-block;
@@ -462,6 +478,8 @@ textarea:focus {
     border-radius: var(--border-radius);
     transition: all 0.2s ease;
     font-weight: 500;
+    font-size: 14px;
+    /* was 15px */
 }
 
 .nav-link:hover {
@@ -482,7 +500,8 @@ textarea:focus {
     border-radius: var(--border-radius);
     padding: 16px;
     word-break: break-all;
-    font-size: 13px;
+    font-size: 12px;
+    /* was 13px */
     line-height: 1.5;
     color: var(--plaid-dark);
 }
@@ -568,7 +587,8 @@ textarea:focus {
 .feature-card h3 {
     margin-bottom: 16px;
     color: var(--plaid-dark);
-    font-size: 1.5rem;
+    font-size: 1.35rem;
+    /* was 1.5rem */
 }
 
 .feature-card p {
@@ -697,7 +717,18 @@ textarea:focus {
 
     .btn-large {
         padding: 14px 24px;
-        font-size: 16px;
+        font-size: 15px;
+        /* was 16px */
+    }
+
+    .navbar-title {
+        font-size: 1.125rem;
+        /* was 1.25rem */
+    }
+
+    .callout-banner {
+        font-size: 12px;
+        /* was 13px */
     }
 }
 
@@ -713,7 +744,8 @@ textarea:focus {
     overflow-x: auto;
     white-space: pre-wrap;
     /* preserve formatting, wrap if needed */
-    font-size: 14px;
+    font-size: 13px;
+    /* was 14px */
 }
 
 /* JSON coloring */
@@ -744,7 +776,8 @@ textarea:focus {
 
 /* VERY IMPORTANT: Emoji styles */
 .jumbo-emoji {
-    font-size: 3rem;
+    font-size: 2.7rem;
+    /* was 3rem */
     line-height: 1;
     display: inline-block;
     vertical-align: middle;
@@ -761,7 +794,8 @@ textarea:focus {
     border-radius: 16px;
     padding: 24px;
     margin: 20px 0;
-    font-size: 14px;
+    font-size: 13px;
+    /* was 14px */
     line-height: 1.6;
     box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1);
     position: relative;
@@ -780,8 +814,15 @@ textarea:focus {
 }
 
 @keyframes shimmer {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
 }
 
 .callout-banner .callout-icon {
@@ -793,7 +834,8 @@ textarea:focus {
 .callout-banner .callout-title {
     color: #92400e;
     font-weight: 600;
-    font-size: 16px;
+    font-size: 15px;
+    /* was 16px */
     margin-bottom: 12px;
     display: flex;
     align-items: center;
@@ -825,7 +867,8 @@ textarea:focus {
     border: 1px solid #d97706;
     color: #92400e;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
+    /* was 13px */
     flex: 1;
     min-width: 250px;
     word-break: break-all;
@@ -837,7 +880,8 @@ textarea:focus {
     border: none;
     padding: 8px 16px;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 11px;
+    /* was 12px */
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -858,19 +902,20 @@ textarea:focus {
 @media (max-width: 768px) {
     .callout-banner {
         padding: 20px;
-        font-size: 13px;
+        font-size: 12px;
+        /* was 13px */
     }
-    
+
     .callout-banner .callout-highlight {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .callout-banner .redirect-url {
         min-width: auto;
         margin-bottom: 8px;
     }
-    
+
     .callout-banner .copy-btn {
         width: 100%;
         padding: 12px;
@@ -897,4 +942,45 @@ textarea:focus {
 .link:focus {
     color: var(--plaid-purple);
     text-decoration: underline;
+}
+
+/* Required field indicator */
+.required-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--plaid-red) 0%, #dc2626 100%);
+    color: white;
+    font-size: 9px;
+    /* was 10px */
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    line-height: 1;
+    box-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
+}
+
+/* Auto-expanding textarea for JSON config */
+.json-editor {
+    width: 100%;
+    min-height: 200px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    padding: 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+    transition: border-color 0.2s;
+    resize: none; /* Disable manual resize */
+    overflow-y: hidden; /* Hide scrollbar initially */
+    line-height: 1.5;
+    box-sizing: border-box; /* Important for proper sizing */
+}
+
+.json-editor:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }

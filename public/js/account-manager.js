@@ -9,7 +9,7 @@ class AccountManager {
 
     async checkExistingToken() {
         try {
-            const health = await window.apiClient.getHealth();
+            const health = await window.apiClient.getStatus();
             if (health.hasAccessToken) {
                 this.hasAccessToken = true;
                 this.currentToken = health.access_token || '(server token)';
@@ -156,7 +156,7 @@ class AccountManager {
 
     async copyExistingToken() {
         try {
-            const health = await window.apiClient.getHealth();
+            const health = await window.apiClient.getStatus();
             if (health.access_token) {
                 const success = await UIUtils.copyToClipboard(health.access_token);
                 if (success) {
