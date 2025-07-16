@@ -378,7 +378,7 @@ textarea:focus {
 }
 
 .btn-full {
-    width: 80%;
+    width: 67%;
 }
 
 /* Status Messages */
@@ -587,7 +587,7 @@ textarea:focus {
 .feature-card h3 {
     margin-bottom: 16px;
     color: var(--plaid-dark);
-    font-size: 1.35rem;
+    font-size: 1.25rem;
     /* was 1.5rem */
 }
 
