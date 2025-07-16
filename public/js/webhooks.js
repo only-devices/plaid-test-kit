@@ -30,7 +30,7 @@ class WebhooksManager {
     displayWebhookUrl() {
         const webhookUrlElement = document.getElementById('webhookUrl');
         if (webhookUrlElement && document.location.origin) {
-            webhookUrlElement.textContent = `${document.location.origin}/webhook`;
+            webhookUrlElement.textContent = `${document.location.origin}/webhooks`;
         }
     }
 
