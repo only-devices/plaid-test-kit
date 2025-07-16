@@ -231,28 +231,32 @@ class UIUtils {
      * @returns {string} HTML string containing syntax highlighted JSON
      */
     static syntaxHighlight(json) {
-        // Ensure we have a string representation of the JSON
         if (typeof json !== 'string') {
             json = JSON.stringify(json, null, 2);
         }
 
-        // Escape HTML special characters
         json = json
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
 
-        // Replace tokens with span-wrapped versions for coloring
-        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g, match => {
-            let cls = 'number';
-            if (/^"/.test(match)) {
-                cls = /:$/.test(match) ? 'key' : 'string';
-            } else if (/true|false/.test(match)) {
-                cls = 'boolean';
-            } else if (/null/.test(match)) {
-                cls = 'null';
+        return json.replace(/("(.*?)")(\s*:\s*)?(\d+|true|false|null)?/g, (match, fullString, key, colonPart, value) => {
+            if (colonPart) {
+            // This is a key-value pair
+            let valueHtml = '';
+            if (value === 'true' || value === 'false') {
+                valueHtml = `<span class="boolean">${value}</span>`;
+            } else if (value === 'null') {
+                valueHtml = `<span class="null">${value}</span>`;
+            } else if (!isNaN(value)) {
+                valueHtml = `<span class="number">${value}</span>`;
             }
-            return `<span class="${cls}">${match}</span>`;
+
+            return `<span class="key">${fullString}</span>${colonPart}${valueHtml}`;
+            } else {
+            // This is just a string (value-only)
+            return `<span class="string">${fullString}</span>`;
+            }
         });
     }
 

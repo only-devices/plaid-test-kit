@@ -69,7 +69,6 @@ plaid-test-kit/
 ## Configuration
 
 - Set environment variables in `.env` (see `.env.example`)
-- `BASE_URL` is injected into the frontend via `/config.js` and available as `window.BASE_URL`
 
 ## Quick Start
 

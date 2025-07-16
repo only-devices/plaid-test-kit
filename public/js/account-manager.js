@@ -77,6 +77,13 @@ class AccountManager {
             if (response.success) {
                 this.hasAccessToken = true;
                 this.currentToken = accessToken;
+
+                // Fetch item_id and set it in itemStore
+                const itemResponse = await window.apiClient.getItem(accessToken);
+                if (itemResponse.success && itemResponse.item_id) {
+                    // Send item_id to backend to store in itemStore
+                    await window.apiClient.setItemId({ access_token: accessToken, item_id: itemResponse.item_id });
+                }
                 
                 UIUtils.showStatus('tokenStatus', 'Access token set successfully!', 'success');
                 

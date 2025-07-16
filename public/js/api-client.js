@@ -58,6 +58,24 @@ class ApiClient {
         });
     }
 
+    async getItem(access_token) {
+    const response = await fetch('/api/get-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token })
+    });
+    return response.json();
+    }
+
+    async setItemId({ access_token, item_id }) {
+        const response = await fetch('/api/set-item-id', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token, item_id })
+        });
+        return response.json();
+    }
+
     // Get link token details (for hosted link)
     async getLinkToken(linkToken) {
         return this.request('/api/get-link-token', {
@@ -83,7 +101,22 @@ class ApiClient {
 
     // Health Check
     async getStatus() {
-    return this.request('/api/status');
+        return this.request('/api/status');
+    }
+
+    // Webhook Operations
+    async getWebhooks() {
+        return this.request('/api/webhooks');
+    }
+
+    async clearWebhooks() {
+        return this.request('/api/webhooks/clear', {
+            method: 'POST'
+        });
+    }
+
+    async getWebhookStats() {
+        return this.request('/api/webhooks/stats');
     }
 }
 

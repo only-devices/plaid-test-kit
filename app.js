@@ -9,6 +9,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (ngrok or similar)
 const PORT = process.env.PORT || 3000;
 
 // Railway-specific HOST configuration
@@ -57,8 +58,7 @@ const sessionConfig = {
   name: 'plaid-test-kit-session'
 };
 
-// Use FileStore in production, MemoryStore in development
-if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT) {
+// Always use FileStore to persist sessions across server restarts
   const FileStore = require('session-file-store')(session);
   sessionConfig.store = new FileStore({
     path: path.join(__dirname, 'sessions'),
@@ -70,10 +70,6 @@ if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT) {
     reapAsync: true,    // Don't block the event loop during cleanup
     reapSyncFallback: false // Disable sync fallback for better performance
   });
-  console.log('📁 Using FileStore for sessions (production)');
-} else {
-  console.log('🧠 Using MemoryStore for sessions (development)');
-}
 
 app.use(session(sessionConfig));
 
@@ -185,7 +181,8 @@ function generateNavbar(config = {}) {
 
   const navItems = [
     { href: '/', text: 'Home', id: 'home' },
-    { href: '/link-config.html', text: 'Link Config', id: 'link-config' },
+    { href: '/link-config.html', text: 'Link', id: 'link-config' },
+    { href: '/webhooks.html', text: 'Webhooks', id: 'webhooks' },
     { href: '/auth-tester.html', text: 'Auth', id: 'auth' },
     { href: '/balance-tester.html', text: 'Balance', id: 'balance' },
     { href: '/identity-tester.html', text: 'Identity', id: 'identity' }
@@ -237,6 +234,35 @@ function sendPageWithNavbar(res, filePath, navbarConfig = {}) {
   }
 }
 
+// Cleanup webhooks older than 24h
+function purgeOldWebhooks() {
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  webhookStore = webhookStore.filter(w => new Date(w.timestamp).getTime() > cutoff);
+}
+
+// Create testing itemStore
+function seedItemStore() {
+  if (process.env.NODE_ENV !== 'development') return;
+
+  const testItemId = process.env.TEST_ITEM_ID || 'ZndmkWwDbvhEM1rZpeAgFLmLEX6mMWFgnWP3K';
+  const testClientId = process.env.TEST_CLIENT_ID || 'your-client-id-here';
+  const testSecret = process.env.TEST_SECRET || 'your-secret-here';
+  const testEnv = process.env.TEST_ENV || 'sandbox';
+
+  itemStore.set(testItemId, {
+    clientId: testClientId,
+    secret: testSecret,
+    environment: testEnv
+  });
+
+  console.log(`🧪 itemStore seeded with test item_id: ${testItemId}`);
+}
+
+// 🔐 UPDATED: Plaid webhook indexing to map webhooks to the right items
+const NodeCache = require('node-cache');
+const itemStore = new NodeCache({ stdTTL: 24 * 60 * 60, checkperiod: 3600 }); // 24h TTL, hourly cleanup
+seedItemStore(); // Seed item store in development
+
 // 3. SECURITY MIDDLEWARE
 // Enhanced validateApiKey middleware with debugging
 const validateApiKey = (req, res, next) => {
@@ -245,17 +271,19 @@ const validateApiKey = (req, res, next) => {
     req.path.includes('/js/') ||
     req.path.includes('/assets/') ||
     req.path === '/health' ||
+    req.path === '/webhooks' ||
     req.path === '/auth' ||
     req.path === '/api/validate-key' ||
     req.path === '/api/logout') {
     return next();
   }
-
+  /*
   console.log(`🔍 Validating access to ${req.path}`);
   console.log(`   Session ID: ${req.sessionID || 'none'}`);
   console.log(`   Session exists: ${!!req.session}`);
   console.log(`   Session has credentials: ${!!req.session?.plaidCredentials}`);
   console.log(`   Cookie has credentials: ${!!req.cookies?.plaidCredentials}`);
+  */
 
   // Check for encrypted credentials in session OR cookies
   const encryptedCreds = req.session?.plaidCredentials || req.cookies?.plaidCredentials;
@@ -299,7 +327,7 @@ const validateApiKey = (req, res, next) => {
       });
     }
 
-    console.log(`✅ Access granted to ${req.path}`);
+    //console.log(`✅ Access granted to ${req.path}`);
     next();
 
   } catch (error) {
@@ -327,12 +355,13 @@ app.use(validateApiKey);
 // Health check endpoint (public for Railway health checks)
 const rateLimit = require('express-rate-limit');
 
-const healthLimiter = rateLimit({
+const rateLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30 // limit each IP to 30 requests per minute
+  max: 30, // limit each IP to 30 requests per minute
+  message: { error: 'Too many requests, please take a deep breath and try again in a minute.' }
 });
 
-app.get('/health', healthLimiter, (req, res) => {
+app.get('/health', rateLimiter, (req, res) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -341,6 +370,53 @@ app.get('/health', healthLimiter, (req, res) => {
     version: require('./package.json').version || '2.0.0',
     node_version: process.version
   });
+});
+
+// Webhook ingestion endpoint (public)
+const PLAID_ALLOWED_IPS = ['52.21.26.131', '52.21.47.157', '52.41.247.19', '52.88.82.239'];
+let webhookStore = [];
+
+app.post('/webhooks', rateLimiter, express.text({ type: '*/*' }), async (req, res) => {
+  const senderIP = req.ip.replace('::ffff:', '');
+  const rawBody = req.body;
+
+  if (!PLAID_ALLOWED_IPS.includes(senderIP)) {
+    console.warn(`❌ Unauthorized IP: ${senderIP}`);
+    return res.status(403).json({ error: 'Unauthorized IP' });
+  }
+
+  let parsed;
+  try {
+    parsed = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
+  } catch (err) {
+    console.error('Failed to parse webhook payload:', err);
+    return res.status(400).json({ error: 'Invalid JSON in webhook' });
+  }
+
+  const itemId = parsed.item_id;
+
+  if (!itemId) {
+    console.warn('⚠️ Webhook received without item_id');
+    return res.status(400).json({ error: 'Missing item_id' });
+  }
+
+  const itemInfo = itemStore.get(itemId);
+
+  if (!itemInfo) {
+    console.warn(`⚠️ Unknown item_id received in webhook: ${itemId}`);
+    return res.status(404).json({ error: 'Unknown item_id' });
+  }
+
+  webhookStore.push({
+    timestamp: new Date().toISOString(),
+    webhook_type: parsed.webhook_type || 'unknown',
+    data: parsed,
+    item_id: itemId,
+    clientId: itemInfo.clientId
+  });
+
+  purgeOldWebhooks();
+  res.json({ success: true });
 });
 
 // 🔐 UPDATED: More secure auth page with better UX
@@ -578,13 +654,15 @@ app.get('/link-config.html', (req, res) => {
   });
 });
 
-// 6. OTHER GET ROUTES (OAuth, hosted link, etc.)
-// Helper endpoint to return BASE_URL variable
-app.get('/config.js', (req, res) => {
-  res.type('application/javascript');
-  res.send(`window.BASE_URL = "${BASE_URL}"`);
+app.get('/webhooks.html', (req, res) => {
+  sendPageWithNavbar(res, path.join(__dirname, 'public', 'webhooks.html'), {
+    title: 'Webhooks',
+    subtitle: 'View and manage webhook events',
+    activeItem: 'webhooks'
+  });
 });
 
+// 6. OTHER GET ROUTES (OAuth, hosted link, etc.)
 // Hosted Link completion handler
 app.get('/hosted-link-complete', async (req, res) => {
   try {
@@ -763,6 +841,7 @@ app.get('/api/status', (req, res) => {
   res.json({
     status: 'OK',
     hasAccessToken: !!accessToken,
+    access_token: accessToken || null,
     has_custom_link_config: !!customLinkConfig,
     custom_link_config: customLinkConfig || null,
     environment: 'sandbox',
@@ -1012,6 +1091,15 @@ app.post('/api/exchange-token', async (req, res) => {
     });
 
     accessToken = response.data.access_token;
+
+    // Store item ID in a simple in-memory store (for webhook organization per client ID)
+    itemId = response.data.item_id;
+
+    itemStore.set(itemId, {
+      clientId: req.plaidClientId,
+      secret: req.plaidSecret,
+      environment: req.plaidEnvironment
+    });
 
     res.json({
       success: true,
@@ -1410,6 +1498,66 @@ app.post('/api/clear-token', async (req, res) => {
       details: error.message
     });
   }
+});
+
+// Store item ID for existing access token
+app.post('/api/set-item-id', (req, res) => {
+  const { item_id } = req.body;
+  if (req.plaidClientId && item_id) {
+    if (!itemStore.has(item_id)) {
+      itemStore.set(item_id, {
+        clientId: req.plaidClientId,
+        secret: req.plaidSecret,
+        environment: req.plaidEnvironment
+      });
+  } else {
+    console.log(`Item ID ${item_id} already exists in store for client ${req.plaidClientId}`);
+  }
+    res.json({ success: true });
+  } else {
+    res.status(400).json({ success: false, error: 'Missing access_token or item_id' });
+  }
+});
+
+app.post('/api/get-item', async (req, res) => {
+  const { access_token } = req.body;
+  try {
+    const plaidClient = createPlaidClient(req);
+    const response = await plaidClient.itemGet({ access_token });
+    res.json({ success: true, item_id: response.data.item.item_id });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 9. WEBHOOK API ENDPOINTS
+// Auth-protected endpoints
+app.get('/api/webhooks', (req, res) => {
+  purgeOldWebhooks();
+  res.json({ success: true, webhooks: webhookStore });
+});
+
+app.post('/api/webhooks/clear', (req, res) => {
+  webhookStore = [];
+  res.json({ success: true, message: 'Webhook logs cleared' });
+});
+
+app.get('/api/webhooks/stats', (req, res) => {
+  purgeOldWebhooks();
+  const total = webhookStore.length;
+  const verified = webhookStore.filter(w => w.verified).length;
+  const lastHour = webhookStore.filter(w => new Date(w.timestamp) > Date.now() - 60 * 60 * 1000).length;
+  const uniqueTypes = new Set(webhookStore.map(w => w.webhook_type)).size;
+
+  res.json({
+    success: true,
+    stats: {
+      total,
+      verified,
+      uniqueTypes,
+      lastHour
+    }
+  });
 });
 
 app.listen(PORT, () => {

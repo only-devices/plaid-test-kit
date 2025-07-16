@@ -42,6 +42,8 @@ class LinkTokenConfig {
     }
 
     async init() {
+        // Display webhook URL
+        this.displayWebhookUrl();
         this.renderProductsTable();
         this.setupEventListeners();
         await this.loadExistingConfig();
@@ -224,6 +226,13 @@ class LinkTokenConfig {
         document.getElementById('savePreset').addEventListener('click', () => {
             this.savePreset();
         });
+    }
+
+    displayWebhookUrl() {
+        const webhookUrlElement = document.getElementById('webhookUrl');
+        if (webhookUrlElement && document.location.origin) {
+            webhookUrlElement.placeholder = `${document.location.origin}/webhooks`;
+        }
     }
 
     toggleAdvancedMode() {
@@ -637,8 +646,8 @@ function initializeAutoResize() {
         jsonConfig.addEventListener('keyup', handleKeyup);
 
         // Load current configuration into the textarea
-        if (linkTokenConfig.config) {
-            jsonConfig.value = JSON.stringify(linkTokenConfig.config, null, 2);
+        if (window.linkTokenConfig?.config) {
+            jsonConfig.value = JSON.stringify(window.linkTokenConfig.config, null, 2);
         }
 
         // Initial resize
@@ -705,9 +714,9 @@ function setupToggle() {
             // Always refresh textarea content and resize when toggle is clicked
             if (jsonConfig) {
                 // Refresh content from current config
-                if (linkTokenConfig.config) {
+                if (window.linkTokenConfig?.config) {
 
-                    jsonConfig.value = JSON.stringify(linkTokenConfig.config, null, 2);
+                    jsonConfig.value = JSON.stringify(window.linkTokenConfig.config, null, 2);
                 } else {
                     console.log('No linkTokenConfig.config found, using placeholder');
                     // Fallback to placeholder if no config exists

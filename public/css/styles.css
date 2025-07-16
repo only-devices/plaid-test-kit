@@ -966,16 +966,9 @@ textarea:focus {
 .json-editor {
     width: 100%;
     min-height: 200px;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 13px;
-    padding: 16px;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    background: #f8fafc;
     transition: border-color 0.2s;
     resize: none; /* Disable manual resize */
-    overflow-y: hidden; /* Hide scrollbar initially */
-    line-height: 1.5;
+    overflow-y: hidden;
     box-sizing: border-box; /* Important for proper sizing */
 }
 
@@ -983,4 +976,34 @@ textarea:focus {
     outline: none;
     border-color: #6366f1;
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.json-block {
+  background: #0f172a; /* slate-900 */
+  color: #e2e8f0;      /* slate-100 */
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-top: 12px;
+  white-space: pre;
+  border: 1px solid #1e293b; /* slate-800 */
+}
+
+.json-block .key {
+  color: #7dd3fc; /* sky-300 */
+}
+.json-block .string {
+  color: #86efac; /* green-300 */
+}
+.json-block .number {
+  color: #facc15; /* yellow-400 */
+}
+.json-block .boolean {
+  color: #f472b6; /* pink-400 */
+}
+.json-block .null {
+  color: #94a3b8; /* slate-400 */
 }

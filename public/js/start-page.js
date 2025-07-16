@@ -9,8 +9,7 @@ class StartPage {
 
     init() {
         // Check if we have an existing token and configuration
-        this.checkExistingToken();
-        this.checkCustomConfiguration();
+        window.accountManager.checkExistingToken();
 
         // Check if we're returning from a hosted link session
         this.checkHostedLinkCompletion();
@@ -80,7 +79,7 @@ class StartPage {
             // Update button to show fallback
             copyBaseUrlBtn.textContent = 'Selected - Press Ctrl+C';
 
-            UIUtils.showNotification('Please press Ctrl+C to copy the selected URL', 'warning');
+            UIUtils.showNotification('Please use Ctrl+C to copy the selected URL', 'warning');
 
             // Reset button after 3 seconds
             setTimeout(() => {
@@ -133,18 +132,6 @@ class StartPage {
         }
     }
 
-    async checkExistingToken() {
-        try {
-            const health = await window.apiClient.getStatus();
-            if (health.hasAccessToken) {
-                this.currentAccessToken = health.access_token || '(server token)';
-                this.showExistingTokenBanner();
-            }
-        } catch (error) {
-            console.log('Health check failed:', error);
-        }
-    }
-
     async checkCustomConfiguration() {
         try {
             // First check localStorage for saved configuration
@@ -169,40 +156,6 @@ class StartPage {
             console.log('Config check failed:', error);
             this.updateConfigStatus();
         }
-    }
-
-    showExistingTokenBanner() {
-        // Create or update existing token banner
-        let banner = document.getElementById('existingTokenBanner');
-        if (!banner) {
-            banner = document.createElement('div');
-            banner.id = 'existingTokenBanner';
-            banner.className = 'card';
-            banner.style.backgroundColor = '#e3f2fd';
-            banner.style.borderLeft = '4px solid #2196f3';
-
-            // Insert after header
-            const header = document.querySelector('.header');
-            if (header && header.parentNode) {
-                header.parentNode.insertBefore(banner, header.nextSibling);
-            } else {
-                // Fallback: append to body or another container
-                document.body.prepend(banner);
-            }
-        }
-
-        banner.innerHTML = `
-            <div class="grid grid-2">
-                <div>
-                    <h4 style="margin: 0;">An access token is already available</h4>
-                    <p style="margin: 5px 0 0 0; color: #666;">You can continue testing or start over with a new connection.</p>
-                </div>
-                <div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end;">
-                    <button class="btn btn-outline" onclick="copyExistingToken()">Copy Token</button>
-                    <button class="btn btn-secondary" onclick="clearTokenAndStartOver()">Start Over</button>
-                </div>
-            </div>
-        `;
     }
 
     showConfigurationBanner() {
@@ -320,55 +273,6 @@ class StartPage {
             }
         } catch (error) {
             console.error('Failed to clear stored configuration:', error);
-        }
-    }
-
-    async copyExistingToken() {
-        try {
-            const health = await window.apiClient.getStatus();
-            console.log('Health response:', health); // Debug log
-
-            if (health.access_token) {
-                const success = await UIUtils.copyToClipboard(health.access_token);
-                if (success) {
-                    UIUtils.showNotification('Access token copied to clipboard!', 'success');
-                } else {
-                    UIUtils.showNotification('Failed to copy token', 'error');
-                }
-            } else {
-                console.error('No access_token in health response:', health);
-                UIUtils.showNotification('No token available', 'error');
-            }
-        } catch (error) {
-            UIUtils.showNotification('Failed to retrieve token', 'error');
-            console.error('Copy token error:', error);
-        }
-    }
-
-    async clearTokenAndStartOver() {
-        try {
-            // Clear token on server
-            await window.apiClient.clearToken();
-
-            // Remove the banner
-            const banner = document.getElementById('existingTokenBanner');
-            if (banner) {
-                banner.remove();
-            }
-
-            // Reset local state
-            this.currentAccessToken = null;
-
-            // Clear direct token status
-            UIUtils.clearStatus('directTokenStatus');
-
-            // Call existing start over functionality
-            this.startOver();
-
-            UIUtils.showNotification('Access token cleared successfully', 'success');
-        } catch (error) {
-            UIUtils.showNotification('Failed to clear token', 'error');
-            console.error('Clear token error:', error);
         }
     }
 
@@ -1072,10 +976,6 @@ function startUpdateMode() {
 
 function copyAccessToken() {
     window.startPage.copyAccessToken();
-}
-
-function copyExistingToken() {
-    window.startPage.copyExistingToken();
 }
 
 function clearTokenAndStartOver() {

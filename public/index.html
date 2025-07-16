@@ -7,7 +7,6 @@
     <title>Plaid Test Kit</title>
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
     <link rel="stylesheet" href="/css/styles.css">
-    <script src="/config.js"></script>
 </head>
 
 <body>
@@ -202,7 +201,7 @@
         <p>Direct access to different Plaid API testing modules. Each module can use an existing access token or guide
             you through Link.</p>
 
-        <div class="grid grid-3">
+        <div class="grid grid-4">
             <div class="feature-card" onclick="window.location.href='/auth-tester.html'">
                 <h3>🏦 Auth</h3>
                 <p>Test Auth /get endpoint for account & routing numbers</p>
@@ -220,6 +219,12 @@
                 <p>See /identity/get responses and /identity/match scores and results</p>
                 <button class="btn btn-primary btn-full">Open Identity Tester</button>
             </div>
+
+            <div class="feature-card" onclick="window.location.href='/webhooks.html'">
+                <h3>🔔 Webhooks</h3>
+                <p>View and manage webhook events</p>
+                <button class="btn btn-primary btn-full">Open Webhooks</button>
+            </div>
         </div>
     </div>
 
@@ -227,13 +232,14 @@
     <script src="/js/api-client.js"></script>
     <script src="/js/plaid-link.js"></script>
     <script src="/js/ui-utils.js"></script>
+    <script src="/js/account-manager.js"></script>
     <script src="/js/start-page.js"></script>
     <!-- Populate the OAuth redirect URI section -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var baseUrlText = document.getElementById('baseUrl');
-            if (baseUrlText && window.BASE_URL) {
-                baseUrlText.textContent = window.BASE_URL + '/oauth-redirect';
+            if (baseUrlText && document.location.origin) {
+                baseUrlText.textContent = document.location.origin + '/oauth-redirect';
             }
         });
     </script>
