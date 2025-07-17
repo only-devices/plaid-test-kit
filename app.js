@@ -59,17 +59,17 @@ const sessionConfig = {
 };
 
 // Always use FileStore to persist sessions across server restarts
-  const FileStore = require('session-file-store')(session);
-  sessionConfig.store = new FileStore({
-    path: path.join(__dirname, 'sessions'),
-    ttl: 86400, // 24 hours in seconds
-    retries: 0,
-    logFn: function () { }, // Disable file store logging
-    // Automatic cleanup options
-    reapInterval: 3600, // Clean up every hour (in seconds)
-    reapAsync: true,    // Don't block the event loop during cleanup
-    reapSyncFallback: false // Disable sync fallback for better performance
-  });
+const FileStore = require('session-file-store')(session);
+sessionConfig.store = new FileStore({
+  path: path.join(__dirname, 'sessions'),
+  ttl: 86400, // 24 hours in seconds
+  retries: 0,
+  logFn: function () { }, // Disable file store logging
+  // Automatic cleanup options
+  reapInterval: 3600, // Clean up every hour (in seconds)
+  reapAsync: true,    // Don't block the event loop during cleanup
+  reapSyncFallback: false // Disable sync fallback for better performance
+});
 
 app.use(session(sessionConfig));
 
@@ -1510,9 +1510,9 @@ app.post('/api/set-item-id', (req, res) => {
         secret: req.plaidSecret,
         environment: req.plaidEnvironment
       });
-  } else {
-    console.log(`Item ID ${item_id} already exists in store for client ${req.plaidClientId}`);
-  }
+    } else {
+      console.log(`Item ID ${item_id} already exists in store for client ${req.plaidClientId}`);
+    }
     res.json({ success: true });
   } else {
     res.status(400).json({ success: false, error: 'Missing access_token or item_id' });
@@ -1527,6 +1527,103 @@ app.post('/api/get-item', async (req, res) => {
     res.json({ success: true, item_id: response.data.item.item_id });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Create Layer session token - UPDATED VERSION
+app.post('/api/session/token/create', async (req, res) => {
+  try {
+    const plaidClient = createPlaidClient(req);
+    const { client_user_id, template_id } = req.body;
+
+    console.log('Creating Layer session token with template_id:', template_id);
+
+    const response = await plaidClient.sessionTokenCreate({
+      template_id: template_id,
+      user: {
+        client_user_id: client_user_id
+      }
+    });
+
+    console.log('Layer session token created successfully');
+    console.log('Response data:', response.data);
+
+    res.json({
+      success: true,
+      data: response.data,
+      link_token: response.data.link.link_token,
+      client_user_id: client_user_id
+    });
+    
+  } catch (error) {
+    console.error('Layer session token creation error:', error);
+    console.error('Error details:', error.response?.data);
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create Layer session token',
+      details: error.response?.data || error.message
+    });
+  }
+});
+
+// Get Layer session results - CORRECTED VERSION for public_token
+app.post('/api/user_account/session/get', async (req, res) => {
+  try {
+    const plaidClient = createPlaidClient(req);
+    const { public_token } = req.body;
+
+    // Layer uses public_token
+    const tokenToUse = public_token;
+
+    if (!tokenToUse) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'public_token is required for Layer session retrieval',
+        received_body: req.body
+      });
+    }
+
+    console.log('Retrieving Layer session results with public_token:', tokenToUse);
+
+    // Try different function names for user account session get
+    let response;
+    try {
+      if (typeof plaidClient.userAccountSessionGet === 'function') {
+        response = await plaidClient.userAccountSessionGet({
+          public_token: tokenToUse
+        });
+      } else {
+        throw new Error('No compatible Layer session retrieval method found');
+      }
+    } catch (methodError) {
+      console.error('Method-specific error:', methodError);
+      throw methodError;
+    }
+
+    console.log('Layer session results retrieved successfully');
+    console.log('Identity data:', response.data.identity);
+    console.log('Items:', response.data.items);
+
+    // Extract access tokens for use in other modules
+    const accessTokens = response.data.items?.map(item => item.access_token) || [];
+    
+    res.json({
+      success: true,
+      data: response.data,
+      identity: response.data.identity,
+      items: response.data.items,
+      access_tokens: accessTokens, // For easy access
+      has_access_tokens: accessTokens.length > 0
+    });
+
+  } catch (error) {
+    console.error('Layer session results error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve Layer session results',
+      details: error.response?.data || error.message
+    });
   }
 });
 

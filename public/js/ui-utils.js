@@ -21,7 +21,7 @@ class UIUtils {
     static clearStatus(element) {
         const el = typeof element === 'string' ? document.getElementById(element) : element;
         if (!el) return;
-        
+
         el.innerHTML = '';
     }
 
@@ -86,10 +86,10 @@ class UIUtils {
     static populateSelect(select, options, placeholder = 'Select an option...') {
         const selectEl = typeof select === 'string' ? document.getElementById(select) : select;
         if (!selectEl) return;
-        
+
         selectEl.style.backgroundColor = 'white'; // Reset background color
         selectEl.innerHTML = `<option value="">${placeholder}</option>`;
-        
+
         options.forEach(option => {
             const optionEl = document.createElement('option');
             optionEl.value = option.value;
@@ -131,7 +131,7 @@ class UIUtils {
             font-size: 18px;
             margin-right: 8px;
         `;
-        
+
         // Add keyframe animation if not already present
         if (!document.querySelector('#spinner-keyframes')) {
             const style = document.createElement('style');
@@ -144,7 +144,7 @@ class UIUtils {
             `;
             document.head.appendChild(style);
         }
-        
+
         return spinner;
     }
 
@@ -242,20 +242,20 @@ class UIUtils {
 
         return json.replace(/("(.*?)")(\s*:\s*)?(\d+|true|false|null)?/g, (match, fullString, key, colonPart, value) => {
             if (colonPart) {
-            // This is a key-value pair
-            let valueHtml = '';
-            if (value === 'true' || value === 'false') {
-                valueHtml = `<span class="boolean">${value}</span>`;
-            } else if (value === 'null') {
-                valueHtml = `<span class="null">${value}</span>`;
-            } else if (!isNaN(value)) {
-                valueHtml = `<span class="number">${value}</span>`;
-            }
+                // This is a key-value pair
+                let valueHtml = '';
+                if (value === 'true' || value === 'false') {
+                    valueHtml = `<span class="boolean">${value}</span>`;
+                } else if (value === 'null') {
+                    valueHtml = `<span class="null">${value}</span>`;
+                } else if (!isNaN(value)) {
+                    valueHtml = `<span class="number">${value}</span>`;
+                }
 
-            return `<span class="key">${fullString}</span>${colonPart}${valueHtml}`;
+                return `<span class="key">${fullString}</span>${colonPart}${valueHtml}`;
             } else {
-            // This is just a string (value-only)
-            return `<span class="string">${fullString}</span>`;
+                // This is just a string (value-only)
+                return `<span class="string">${fullString}</span>`;
             }
         });
     }
@@ -286,13 +286,13 @@ class UIUtils {
         `;
 
         document.body.appendChild(notification);
-        
+
         // Trigger animation
         requestAnimationFrame(() => {
             notification.style.opacity = '1';
             notification.style.transform = 'translateX(0)';
         });
-        
+
         // Auto-dismiss
         setTimeout(() => {
             notification.style.opacity = '0';
@@ -316,13 +316,13 @@ class UIUtils {
         });
     }
 
-/**
-     * Logout user and redirect to auth page
-     * @param {Object} options - Logout options
-     * @param {boolean} options.confirm - Whether to show confirmation dialog
-     * @param {string} options.returnUrl - URL to redirect to after logout
-     * @param {string} options.message - Custom logout message
-     */
+    /**
+         * Logout user and redirect to auth page
+         * @param {Object} options - Logout options
+         * @param {boolean} options.confirm - Whether to show confirmation dialog
+         * @param {string} options.returnUrl - URL to redirect to after logout
+         * @param {string} options.message - Custom logout message
+         */
     static async logout(options = {}) {
         const {
             confirm = true,
@@ -364,12 +364,12 @@ class UIUtils {
         } catch (error) {
             console.error('Logout failed:', error);
             UIUtils.showNotification('Logout failed. Redirecting anyway...', 'warning');
-            
+
             // Force redirect even if API call fails
             setTimeout(() => {
                 window.location.href = returnUrl;
             }, 1000);
-            
+
             return false;
         }
     }
@@ -383,7 +383,7 @@ class UIUtils {
             const response = await fetch('/api/auth-status', {
                 credentials: 'same-origin'
             });
-            
+
             if (response.ok) {
                 return await response.json();
             } else {
@@ -398,7 +398,7 @@ class UIUtils {
     /**
      * Add logout button to navigation
      * @param {HTMLElement|string} container - Container element or selector
-     * @param {Object} options - Button options
+     * @returns {string} HTML string containing syntax highlighted JSON
      */
     static addLogoutButton(container, options = {}) {
         const {
@@ -407,9 +407,9 @@ class UIUtils {
             position = 'append' // 'append', 'prepend', or 'replace'
         } = options;
 
-        const containerEl = typeof container === 'string' ? 
+        const containerEl = typeof container === 'string' ?
             document.querySelector(container) : container;
-        
+
         if (!containerEl) {
             console.warn('Logout button container not found');
             return null;
@@ -430,6 +430,19 @@ class UIUtils {
         }
 
         return logoutButton;
+    }
+
+    /**
+     * Generate a random username
+     * @returns {string} HTML string containing random username
+     */
+   static generateRandomUsername() {
+        const adjectives = ['happy', 'clever', 'bright', 'quick', 'calm', 'bold', 'wise', 'cool'];
+        const nouns = ['plaid', 'tiger', 'eagle', 'wolf', 'bear', 'fox', 'hawk', 'lion', 'shark'];
+        const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+        const noun = nouns[Math.floor(Math.random() * nouns.length)];
+        const number = Math.floor(Math.random() * 999) + 1;
+        return `${adjective}_${noun}_${number}`;
     }
 }
 

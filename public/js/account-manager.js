@@ -57,7 +57,7 @@ class AccountManager {
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end;">
                     <button class="btn btn-outline" onclick="copyExistingToken()">Copy Token</button>
-                    <button class="btn btn-secondary" onclick="clearTokenAndStartOver()">Start Over</button>
+                    <button class="btn btn-secondary" onclick="startOver()">Start Over</button>
                 </div>
             </div>
         `;
@@ -180,7 +180,7 @@ class AccountManager {
         }
     }
 
-    async clearTokenAndStartOver() {
+    async startOver() {
         try {
             // Clear token on server
             await window.apiClient.clearToken();
@@ -208,12 +208,7 @@ class AccountManager {
                 window.pageTester.clearResults();
             }
             
-            UIUtils.showNotification('Access token cleared - redirecting to start page...', 'success');
-            
-            // Redirect to start page after a short delay
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 1500);
+            UIUtils.showNotification('Access token cleared!', 'success');
             
         } catch (error) {
             UIUtils.showNotification('Failed to clear token', 'error');
@@ -236,6 +231,6 @@ function copyExistingToken() {
     window.accountManager.copyExistingToken();
 }
 
-function clearTokenAndStartOver() {
-    window.accountManager.clearTokenAndStartOver();
+function startOver() {
+    window.accountManager.startOver();
 }

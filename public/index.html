@@ -85,7 +85,9 @@
             </div>
 
             <div class="callout-content">
-                OAuth support is automatic based on the institution you select, but you will need to add the URL below to the <a href="https://dashboard.plaid.com/developers/api" alt="Plaid Dashboard Link" class="link">Allowed redirect URIs</a> first.
+                OAuth support is automatic based on the institution you select, but you will need to add the URL below
+                to the <a href="https://dashboard.plaid.com/developers/api" alt="Plaid Dashboard Link"
+                    class="link">Allowed redirect URIs</a> first.
             </div>
 
             <div class="callout-highlight">
@@ -95,7 +97,7 @@
                 </button>
             </div>
         </div>
-        <div class="grid grid-4">
+        <div class="grid grid-3">
             <div class="feature-card" onclick="startStandardLink()">
                 <h3>🔗 Standard Link</h3>
             </div>
@@ -106,7 +108,12 @@
             <div class="feature-card" onclick="startHostedLink()">
                 <h3>🌐 Hosted Link</h3>
             </div>
-
+        </div>
+        <div style="margin-top: 16px;"></div>
+        <div class="grid grid-2">
+            <div class="feature-card" onclick="startLayer()">
+                <h3>⚡️ Layer</h3>
+            </div>
             <div class="feature-card" onclick="showUpdateMode()">
                 <h3>🔄 Link Update Mode</h3>
             </div>
@@ -128,7 +135,7 @@
             <div>
                 <p>Your bank account is now connected.</p>
                 <div class="grid">
-                    <button class="btn btn-outline" onclick="startOver()">Start Over</button>
+                    <button class="btn btn-outline" onclick="startPageStartOver()">Start Over</button>
                 </div>
             </div>
         </div>
@@ -175,6 +182,79 @@
         </div>
     </div>
 
+    <!-- Layer Container -->
+    <div id="layerStatus" style="margin-top: 16px;"></div>
+
+    <div id="layerContainer" class="card hidden">
+
+        <div class="grid grid-3">
+            <div class="form-column">
+                <div class="form-group">
+                    <label for="layerTemplateIdInput">Layer Template ID <span
+                            class="required-badge">Required</span></label>
+                    <input type="tel" id="layerTemplateIdInput" placeholder="template_123456XXX"
+                        style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <div class="help-text">
+                        You can find your Layer template ID in the Plaid Dashboard, within the Layer Template Editor.
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="layerUserIdInput">User ID <span class="required-badge">Required</span></label>
+                    <input type="tel" id="layerUserIdInput" placeholder="client_user_id_here"
+                        style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="fillRandomUserId()">Generate Random User
+                        ID</button>
+                </div>
+                <button id="layerInitButton" class="btn btn-primary" onclick="initializeLayerSession()">
+                    Initialize Layer
+                </button>
+            </div>
+            <div>
+                <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; color: #1e40af;"><span class="jumbo-emoji">👈</span> First, initialize
+                        Layer with your template_id and client_user_id</h4>
+                </div>
+                <br>
+                <br>
+                <div id="layerStepTwo" class="hidden" style="background: #7dff6c; padding: 12px; border-radius: 8px; font-size: 13px; color: #92400e;">
+                    <h4 style="margin: 0 0 8px 0; color: #1e40af;">Success! Now, check eligiblity to launch Layer!
+                    </h4>
+                    <div style="text-align: right;">
+                        <span class="jumbo-emoji">👉</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-column">
+                <div class="form-group">
+                    <label for="layerPhoneInput">Phone Number <span class="required-badge">Required</span></label>
+                    <input type="tel" id="layerPhoneInput" value="+1 415-555-0015"
+                        style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px;">
+                    <div class="help-text">
+                        This field is pre-filled with a "good" test number. The OTP code is 123456.
+                        <a href="https://plaid.com/docs/layer/#testing-layer" class="link" target="_blank">
+                            Read the Layer docs
+                        </a>
+                        for more info.
+                    </div>
+                </div>
+                <button id="layerSubmitButton" class="btn btn-primary" onclick="submitLayerPhone()">
+                    Check Layer Eligibility
+                </button>
+            </div>
+            <!-- Unnecessary Informational Block, maybe use later
+            <div>
+                <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; color: #1e40af;">What is Layer?</h4>
+                    <p style="margin: 0; font-size: 14px; color: #1e40af;">Layer is Plaid's instant bank connection experience that eliminates the need for online banking credentials by using your phone number.</p>
+                </div>
+                
+                <div style="background: #fef3c7; padding: 12px; border-radius: 8px; font-size: 13px; color: #92400e;">
+                    <strong>Note:</strong> Layer availability depends on your phone number and financial institution. If not eligible, you can use other Link options.
+                </div>
+            </div> -->
+        </div>
+    </div>
+
     <!-- Link Container for Embedded Mode -->
     <div id="embeddedContainer" class="card hidden">
         <h3>Embedded Link</h3>
@@ -208,24 +288,38 @@
 
             <div class="feature-card" onclick="window.location.href='/webhooks.html'">
                 <h3>🔔 Webhooks</h3>
+            </div>
         </div>
-    </div>
 
-    <!-- Load JavaScript modules -->
-    <script src="/js/api-client.js"></script>
-    <script src="/js/plaid-link.js"></script>
-    <script src="/js/ui-utils.js"></script>
-    <script src="/js/account-manager.js"></script>
-    <script src="/js/start-page.js"></script>
-    <!-- Populate the OAuth redirect URI section -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var baseUrlText = document.getElementById('baseUrl');
-            if (baseUrlText && document.location.origin) {
-                baseUrlText.textContent = document.location.origin + '/oauth-redirect';
+        <!-- Load JavaScript modules -->
+        <script src="/js/api-client.js"></script>
+        <script src="/js/plaid-link.js"></script>
+        <script src="/js/ui-utils.js"></script>
+        <script src="/js/account-manager.js"></script>
+        <script src="/js/layer-manager.js"></script>
+        <script src="/js/start-page.js"></script>
+
+        <!-- Populate the OAuth redirect URI section -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var baseUrlText = document.getElementById('baseUrl');
+                if (baseUrlText && document.location.origin) {
+                    baseUrlText.textContent = document.location.origin + '/oauth-redirect';
+                }
+            });
+        </script>
+
+        <!-- Generate random user ID -->
+        <script>
+            function fillRandomUserId() {
+                const input = document.getElementById('layerUserIdInput');
+                if (window.UIUtils && typeof window.UIUtils.generateRandomUsername === 'function') {
+                    input.value = window.UIUtils.generateRandomUsername();
+                } else {
+                    input.value = 'user_' + Math.floor(Math.random() * 1000000); // fallback
+                }
             }
-        });
-    </script>
+        </script>
 </body>
 
 </html>

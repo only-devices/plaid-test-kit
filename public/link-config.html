@@ -5,219 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plaid Test Kit - Link Token Configuration</title>
     <link rel="stylesheet" href="/css/styles.css">
-    <style>
-        /* Enhanced styling for configuration interface */
-        .config-section {
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-        }
-
-        .config-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #f1f5f9;
-        }
-
-        .config-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #64748b;
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 44px;
-            height: 24px;
-            background: #e2e8f0;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .toggle-switch.active {
-            background: #6366f1;
-        }
-
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.2s;
-        }
-
-        .toggle-switch.active::after {
-            transform: translateX(20px);
-        }
-
-        .products-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-            font-size: 14px;
-        }
-
-        .products-table th,
-        .products-table td {
-            padding: 12px 8px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .products-table th {
-            background: #f8fafc;
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #475569;
-            white-space: nowrap;
-        }
-
-        .products-table tr:hover {
-            background: #f8fafc;
-        }
-
-        .product-checkbox {
-            width: 18px;
-            height: 18px;
-            accent-color: #6366f1;
-            cursor: pointer;
-        }
-
-        .product-name {
-            font-weight: 500;
-            color: #1e293b;
-        }
-
-        .product-description {
-            font-size: 12px;
-            color: #64748b;
-            margin-top: 2px;
-            line-height: 1.3;
-        }
-
-        /* Responsive table adjustments */
-        @media (max-width: 1024px) {
-            .products-table {
-                font-size: 12px;
-            }
-
-            .products-table th,
-            .products-table td {
-                padding: 8px 4px;
-            }
-
-            .product-description {
-                font-size: 11px;
-            }
-        }
-
-        .json-status {
-            margin-top: 8px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .json-valid {
-            background: #f0fdf4;
-            color: #166534;
-            border: 1px solid #bbf7d0;
-        }
-
-        .json-invalid {
-            background: #fef2f2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .form-group-inline {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .form-group-inline label {
-            margin: 0;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .select-small {
-            padding: 8px 12px;
-            font-size: 14px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background: white;
-        }
-
-        .disabled-section {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .help-text {
-            font-size: 12px;
-            color: #64748b;
-            margin-top: 4px;
-            line-height: 1.4;
-        }
-
-        .section-description {
-            color: #64748b;
-            margin-bottom: 16px;
-            line-height: 1.5;
-        }
-
-        /* Column help text */
-        .column-help {
-            background: #f0f9ff;
-            border: 1px solid #0ea5e9;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 16px;
-            font-size: 13px;
-            line-height: 1.4;
-        }
-
-        .column-help h4 {
-            margin: 0 0 8px 0;
-            color: #0c4a6e;
-            font-size: 14px;
-        }
-
-        .column-help ul {
-            margin: 8px 0 0 0;
-            padding-left: 16px;
-        }
-
-        .column-help li {
-            margin-bottom: 4px;
-            color: #0c4a6e;
-        }
-    </style>
 </head>
 <body>
     <!-- Status Display -->
@@ -233,17 +20,17 @@
         </div>
 
         <div class="form-row">
-            <div class="form-group">
+            <div>
                 <label>Link Customization Name</label>
                 <input type="text" id="linkCustomizationName" placeholder="e.g. default, custom_theme" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <div class="help-text">The name of the Link customization to use (optional). Must match a customization created in your Plaid Dashboard.</div>
             </div>
-            <div class="form-group">
+            <div>
                 <label>Client Name <span class="required-badge">Required</span></label>
                 <input type="text" id="clientName" value="Plaid Test Kit" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <div class="help-text">The name of your application as it will be displayed to users</div>
             </div>
-            <div class="form-group">
+            <div>
                 <label>Language <span class="required-badge">Required</span></label>
                 <input type="text" id="language" value="en" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <div class="help-text">
@@ -253,7 +40,7 @@
                     </a>
                 </div>
             </div>
-            <div class="form-group">
+            <div>
             <label>Country Codes <span class="required-badge">Required</span></label>
             <input type="text" id="countryCodesInput" value="US" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
             <div class="help-text">
@@ -261,7 +48,7 @@
                 <a href="https://plaid.com/docs/api/link/#link-token-create-request-country-codes" class="link" target="_blank">Learn more</a>
             </div>
         </div>
-            <div class="form-group">
+            <div>
             <label>Webhook</label>
             <input type="text" id="webhookUrl" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
             <div class="help-text">
@@ -281,12 +68,12 @@
         </div>
 
         <div class="form-row">
-            <div class="form-group">
+            <div>
                 <label>Client User ID <span class="required-badge">Required</span></label>
                 <input type="text" id="clientUserId" placeholder="username864" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <div class="help-text">A customer-generated unique identifier for the end user</div>
             </div>
-            <div class="form-group">
+            <div>
                 <label>Phone Number</label>
                 <input type="text" id="userPhoneNumber" placeholder="+1 415-555-0010" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <div class="help-text">

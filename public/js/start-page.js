@@ -7,7 +7,7 @@ class StartPage {
         this.init();
     }
 
-    init() {
+    async init() {
         // Check if we have an existing token and configuration
         window.accountManager.checkExistingToken();
 
@@ -830,6 +830,231 @@ class StartPage {
         console.log('Link loaded for mode:', this.currentMode);
     }
 
+    /**
+     * Initialize Layer session token
+     */
+    async initializeLayerSession() {
+        const templateInput = document.getElementById('layerTemplateIdInput');
+        const templateId = templateInput.value.trim();
+
+        const userIdInput = document.getElementById('layerUserIdInput');
+        const userId = userIdInput.value.trim();
+
+        if (!templateId) {
+            UIUtils.showStatus('layerStatus', 'Please enter your Layer template ID', 'error');
+            templateInput.focus();
+            return;
+        }
+
+        if (!userId) {
+            UIUtils.showStatus('layerStatus', 'Please enter a client user ID', 'error');
+            userIdInput.focus();
+            return;
+        }
+
+        console.log('Initializing Layer session from Start Page with template ID:', templateId, 'and user ID:', userId);
+
+        try {
+            const initButton = document.getElementById('layerInitButton');
+            UIUtils.setButtonLoading(initButton, true, 'Checking eligibility...');
+
+            UIUtils.showStatus('layerStatus', 'Initializing Layer with the provided parameters...', 'info');
+
+            // Submit template ID and user ID to Layer
+            const result = await window.layerManager.initializeSession(templateId, userId);
+
+            console.log('Layer submit result:', result);
+
+            // Update status to indicate we're waiting for Layer events
+            UIUtils.showStatus('layerStatus', 'Layer initilized, now submit a phone number...', 'info');
+            // Make step two of the instructions visible
+            UIUtils.toggleElement('layerStepTwo', true);
+
+        } catch (error) {
+            UIUtils.showStatus('layerStatus', `Error: ${error.message}`, 'error');
+            console.error('Layer init error:', error);
+        } finally {
+            const initButton = document.getElementById('layerInitButton');
+            UIUtils.setButtonLoading(initButton, false);
+        }
+    }
+
+    /**
+     * Start Layer flow
+     */
+    async startLayer() {
+        try {
+            this.currentMode = 'layer';
+
+            // Show Layer section
+            UIUtils.toggleElement('layerContainer', true);
+
+            // Scroll to Layer section
+            document.getElementById('layerContainer').scrollIntoView({
+                behavior: 'smooth'
+            });
+
+            // Focus on template ID input
+            document.getElementById('layerTemplateIdInput').focus();
+
+            UIUtils.showStatus('layerStatus', 'Provide the required parameters to launch Layer', 'info');
+
+        } catch (error) {
+            UIUtils.showStatus('layerStatus', `Failed to start Layer: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Submit phone number to Layer
+     */
+    async submitLayerPhone() {
+        const phoneInput = document.getElementById('layerPhoneInput');
+        const phoneNumber = phoneInput.value.trim();
+
+        if (!phoneNumber) {
+            UIUtils.showStatus('layerStatus', 'Please enter a phone number', 'error');
+            phoneInput.focus();
+            return;
+        }
+
+        try {
+            const submitButton = document.getElementById('layerSubmitButton');
+            UIUtils.setButtonLoading(submitButton, true, 'Checking eligibility...');
+
+            UIUtils.showStatus('layerStatus', 'Submitting phone number to Layer...', 'info');
+
+            // Submit phone number to Layer
+            const result = await window.layerManager.submitPhoneNumber(phoneNumber);
+
+            console.log('Layer submit result:', result);
+
+            // Update status to indicate we're waiting for Layer events
+            UIUtils.showStatus('layerStatus', 'Phone number submitted. Checking Layer eligibility...', 'info');
+
+            // The Layer SDK will handle the response and trigger appropriate events
+            // through the LayerManager event handlers - no need to process result here
+
+        } catch (error) {
+            UIUtils.showStatus('layerStatus', `Error: ${error.message}`, 'error');
+            console.error('Layer phone submission error:', error);
+        } finally {
+            const submitButton = document.getElementById('layerSubmitButton');
+            UIUtils.setButtonLoading(submitButton, false);
+        }
+    }
+
+    /**
+     * Show Layer success results
+     * @param {Object} results - Layer session results
+     * @param {Object} metadata - Success metadata
+     */
+    showLayerSuccess(results, metadata) {
+        // Hide other sections
+        UIUtils.toggleElement('layerContainer', false);
+        UIUtils.toggleElement('embeddedContainer', false);
+        UIUtils.toggleElement('updateModeCard', false);
+        UIUtils.toggleElement('hostedLinkCard', false);
+
+        // Show success section
+        UIUtils.toggleElement('successSection', true);
+
+        // Extract Layer-specific data
+        const identity = results.identity || {};
+        const items = results.items || [];
+        const accessTokens = results.access_tokens || [];
+
+        // If we have access tokens, set the first one for use in other modules
+        if (accessTokens.length > 0) {
+            this.currentAccessToken = accessTokens[0];
+            console.log('🔑 Access token available for other modules:', this.currentAccessToken);
+
+            // Set the access token on the server for use in other test modules
+            window.apiClient.setAccessToken(this.currentAccessToken).then(() => {
+                console.log('✅ Access token set on server for other modules');
+            }).catch(error => {
+                console.warn('⚠️ Failed to set access token on server:', error);
+            });
+        }
+
+        // Update connection info for Layer
+        const connectionInfo = document.getElementById('connectionInfo');
+
+        connectionInfo.innerHTML = `
+            <div class="grid grid-2">
+                <div>
+                    <strong>Connection Type:</strong> Plaid Layer
+                </div>
+                <div>
+                    <strong>Phone Number:</strong> ${window.layerManager.currentPhoneNumber || identity.phone_number || 'Unknown'}
+                </div>
+                <div>
+                    <strong>User Name:</strong> ${identity.name ? `${identity.name.first_name} ${identity.name.last_name}` : 'Available'}
+                </div>
+                <div>
+                    <strong>Email:</strong> ${identity.email || 'Available'}
+                </div>
+                <div>
+                    <strong>Items Connected:</strong> ${items.length}
+                </div>
+                <div>
+                    <strong>Access Tokens:</strong> ${accessTokens.length}
+                </div>
+            </div>
+        `;
+
+        // Display Layer results (identity + items info)
+        const tokenDisplay = document.getElementById('tokenDisplay');
+        const displayData = {
+            identity: identity,
+            items: items,
+            access_tokens: accessTokens,
+            layer_public_token: metadata.publicToken
+        };
+        tokenDisplay.textContent = JSON.stringify(displayData, null, 2);
+
+        // Update copy button behavior for Layer results
+        const copyButton = document.querySelector('button[onclick="copyAccessToken()"]');
+        if (copyButton) {
+            copyButton.textContent = 'Copy Layer Results';
+            copyButton.onclick = () => this.copyLayerResults();
+        }
+
+        // Scroll to success section
+        document.getElementById('successSection').scrollIntoView({
+            behavior: 'smooth'
+        });
+
+        // Clear other status messages
+        UIUtils.clearStatus('globalStatus');
+        UIUtils.clearStatus('layerStatus');
+        UIUtils.clearStatus('embeddedStatus');
+        UIUtils.clearStatus('updateStatus');
+        UIUtils.clearStatus('hostedLinkStatus');
+
+        // Show notification with next steps
+        UIUtils.showNotification('Layer completed! You can now test other API modules with the connected account.', 'success', 6000);
+    }
+
+    /**
+     * Copy Layer results to clipboard
+     */
+    async copyLayerResults() {
+        try {
+            const results = await window.layerManager.getSessionResults();
+            const resultsText = JSON.stringify(results.data || {}, null, 2);
+
+            const success = await UIUtils.copyToClipboard(resultsText);
+            if (success) {
+                UIUtils.showNotification('Layer results copied to clipboard!', 'success');
+            } else {
+                UIUtils.showNotification('Failed to copy results', 'error');
+            }
+        } catch (error) {
+            UIUtils.showNotification('Failed to copy results', 'error');
+            console.error('Copy Layer results error:', error);
+        }
+    }
+
     showSuccessSection(metadata, authMethod) {
         // Hide other sections
         UIUtils.toggleElement('embeddedContainer', false);
@@ -900,29 +1125,40 @@ class StartPage {
         }
     }
 
-    startOver() {
+    startPageStartOver() {
         // Hide all sections
         UIUtils.toggleElement('embeddedContainer', false);
         UIUtils.toggleElement('updateModeCard', false);
         UIUtils.toggleElement('successSection', false);
+        UIUtils.toggleElement('layerContainer', false); // Add Layer container
 
         // Clear all status messages
         UIUtils.clearStatus('globalStatus');
         UIUtils.clearStatus('embeddedStatus');
         UIUtils.clearStatus('updateStatus');
+        UIUtils.clearStatus('layerStatus'); // Add Layer status
 
         // Reset embedded container
         const container = document.getElementById('linkContainer');
-        container.innerHTML = `
+        if (container) {
+            container.innerHTML = `
             <div class="link-container-placeholder">
                 <p><strong>Embedded Link will appear here</strong></p>
                 <p>Click "Start Embedded Link" above to begin</p>
             </div>
         `;
-        container.style.background = '#f8f9fa';
+            container.style.background = '#f8f9fa';
+        }
 
-        // Destroy any existing Link instance
+        // Reset Layer container
+        const layerPhoneInput = document.getElementById('layerPhoneInput');
+        if (layerPhoneInput) {
+            layerPhoneInput.value = '';
+        }
+
+        // Destroy any existing Link or Layer instances
         window.plaidLinkManager.destroy();
+        window.layerManager.reset();
 
         // Reset state
         this.currentAccessToken = null;
@@ -978,16 +1214,8 @@ function copyAccessToken() {
     window.startPage.copyAccessToken();
 }
 
-function clearTokenAndStartOver() {
-    window.startPage.clearTokenAndStartOver();
-}
-
 function setDirectAccessToken() {
     window.startPage.setDirectAccessToken();
-}
-
-function startOver() {
-    window.startPage.startOver();
 }
 
 function viewConfiguration() {
@@ -1000,6 +1228,26 @@ function clearConfiguration() {
 
 function loadPresetConfig(presetType) {
     window.startPage.loadPresetConfig(presetType);
+}
+
+function startLayer() {
+    window.startPage.startLayer();
+}
+
+function initializeLayerSession() {
+    window.startPage.initializeLayerSession();
+}
+
+function submitLayerPhone() {
+    window.startPage.submitLayerPhone();
+}
+
+function copyLayerResults() {
+    window.startPage.copyLayerResults();
+}
+
+function startPageStartOver() {
+    window.startPage.startPageStartOver();
 }
 
 // Initialize when DOM is ready

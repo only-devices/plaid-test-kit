@@ -525,12 +525,6 @@ class LinkTokenConfig {
                 UIUtils.showNotification('Configuration saved locally (server failed)', 'warning');
             }
 
-            setTimeout(() => {
-                if (confirm('Configuration saved! Would you like to return to the main page to test it?')) {
-                    window.location.href = '/';
-                }
-            }, 2000);
-
         } catch (error) {
             UIUtils.showStatus('configStatus', `Error: ${error.message}`, 'error');
             UIUtils.showNotification(`Failed to apply configuration: ${error.message}`, 'error');
