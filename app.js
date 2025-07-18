@@ -941,7 +941,7 @@ app.post('/api/set-link-config', async (req, res) => {
     }
 
     // Validate required fields
-    const requiredFields = ['client_name', 'products', 'country_codes'];
+    const requiredFields = ['client_name', 'products', 'country_codes', 'user'];
     const missingFields = requiredFields.filter(field => !config[field]);
 
     if (missingFields.length > 0) {

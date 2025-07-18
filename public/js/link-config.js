@@ -60,7 +60,17 @@ class LinkTokenConfig {
             country_codes: ['US'],
             language: 'en',
             user: {
-                client_user_id: 'test-kit-user-' + Date.now(),
+                client_user_id: window.UIUtils.generateRandomUsername(),
+                legal_name: '',
+                address: {
+                    street: '',
+                    street2: '',
+                    city: '',
+                    region: '',
+                    postal_code: '',
+                    country: ''
+                },
+                email_address: '',
                 phone_number: '',
             }
         };
@@ -115,17 +125,41 @@ class LinkTokenConfig {
     }
 
     updateUIFromConfig() {
-        // Update basic inputs
-        document.getElementById('clientName').value = this.config.client_name || 'Plaid Test Kit';
-        document.getElementById('linkCustomizationName').value = this.config.link_customization_name || '';
-        document.getElementById('language').value = this.config.language || 'en';
+        // Map element IDs to config paths
+        const configMap = {
+            clientName: ['client_name'],
+            linkCustomizationName: ['link_customization_name'],
+            language: ['language'],
+            clientUserId: ['user', 'client_user_id'],
+            phoneNumber: ['user', 'phone_number'],
+            legalName: ['user', 'legal_name'],
+            emailAddress: ['user', 'email_address'],
+            addressStreet: ['user', 'address', 'street'],
+            addressStreet2: ['user', 'address', 'street2'],
+            addressCity: ['user', 'address', 'city'],
+            addressRegion: ['user', 'address', 'region'],
+            addressPostalCode: ['user', 'address', 'postal_code'],
+            addressCountry: ['user', 'address', 'country'],
+            countryCodesInput: ['country_codes'],
+        };
 
-        // Update user inputs
-        document.getElementById('clientUserId').value = this.config.user.client_user_id || '';
-        document.getElementById('phoneNumber').value = this.config.user.phone_number || '';
+        Object.entries(configMap).forEach(([elementId, configPath]) => {
+            const el = document.getElementById(elementId);
+            if (!el) return;
 
-        // Update country checkboxes
-        document.getElementById('countryCodesInput').value = (this.config.country_codes || []).join(',');
+            // Traverse config object by path
+            let value = this.config;
+            for (const key of configPath) {
+                value = value?.[key];
+            }
+
+            // Special handling for countryCodesInput (array to string)
+            if (elementId === 'countryCodesInput') {
+                el.value = Array.isArray(value) ? value.join(',') : '';
+            } else {
+                el.value = value ?? '';
+            }
+        });
 
         // Update products table
         this.renderProductsTable();
@@ -208,6 +242,30 @@ class LinkTokenConfig {
             const input = document.getElementById('userPhoneNumber').value;
             this.config.user.phone_number = this.autoDetectE164(input);
         });
+        document.getElementById('userLegalName').addEventListener('input', () => {
+            this.config.user.legal_name = document.getElementById('userLegalName').value;
+        });
+        document.getElementById('userEmailAddress').addEventListener('input', () => {
+            this.config.user.email_address = document.getElementById('userEmailAddress').value;
+        });
+        document.getElementById('userAddressStreet').addEventListener('input', () => {
+            this.config.user.address.street = document.getElementById('userAddressStreet').value;
+        });
+        document.getElementById('userAddressStreet2').addEventListener('input', () => {
+            this.config.user.address.street2 = document.getElementById('userAddressStreet2').value;
+        });
+        document.getElementById('userAddressCity').addEventListener('input', () => {
+            this.config.user.address.city = document.getElementById('userAddressCity').value;
+        });
+        document.getElementById('userAddressRegion').addEventListener('input', () => {
+            this.config.user.address.region = document.getElementById('userAddressRegion').value;
+        });
+        document.getElementById('userAddressPostalCode').addEventListener('input', () => {
+            this.config.user.address.postal_code = document.getElementById('userAddressPostalCode').value;
+        });
+        document.getElementById('userAddressCountry').addEventListener('input', () => {
+            this.config.user.address.country = document.getElementById('userAddressCountry').value.toUpperCase();
+        });
 
         // JSON editor
         document.getElementById('jsonConfig').addEventListener('input', () => {
@@ -225,6 +283,9 @@ class LinkTokenConfig {
 
         document.getElementById('savePreset').addEventListener('click', () => {
             this.savePreset();
+        });
+        document.getElementById('backToStart').addEventListener('click', () => {
+            window.location.href = '/';
         });
     }
 
@@ -436,6 +497,15 @@ class LinkTokenConfig {
         if (jsonConfig.additional_consented_products.length === 0) delete jsonConfig.additional_consented_products;
         if (!jsonConfig.link_customization_name || jsonConfig.link_customization_name.trim() === '') delete jsonConfig.link_customization_name;
         if (!jsonConfig.user.phone_number || jsonConfig.user.phone_number.trim() === '') delete jsonConfig.user.phone_number;
+        if (!jsonConfig.user.legal_name || jsonConfig.user.legal_name.trim() === '') delete jsonConfig.user.legal_name;
+        if (!jsonConfig.user.email_address || jsonConfig.user.email_address.trim() === '') delete jsonConfig.user.email_address;
+        if (!jsonConfig.user.address.street || jsonConfig.user.address.street.trim() === '') delete jsonConfig.user.address.street;
+        if (!jsonConfig.user.address.street2 || jsonConfig.user.address.street2.trim() === '') delete jsonConfig.user.address.street2;
+        if (!jsonConfig.user.address.city || jsonConfig.user.address.city.trim() === '') delete jsonConfig.user.address.city;
+        if (!jsonConfig.user.address.region || jsonConfig.user.address.region.trim() === '') delete jsonConfig.user.address.region;
+        if (!jsonConfig.user.address.postal_code || jsonConfig.user.address.postal_code.trim() === '') delete jsonConfig.user.address.postal_code;
+        if (!jsonConfig.user.address.country || jsonConfig.user.address.country.trim() === '') delete jsonConfig.user.address.country;
+        if (jsonConfig.user && Object.keys(jsonConfig.user).length === 0 && jsonConfig.user.constructor === Object) delete jsonConfig.user;
 
         document.getElementById('jsonConfig').value = JSON.stringify(jsonConfig, null, 2);
         this.validateAndUpdateJSON();
@@ -468,6 +538,15 @@ class LinkTokenConfig {
         if (config.additional_consented_products.length === 0) delete config.additional_consented_products;
         if (!config.link_customization_name || config.link_customization_name.trim() === '') delete config.link_customization_name;
         if (!config.user.phone_number || config.user.phone_number.trim() === '') delete config.user.phone_number;
+        if (!config.user.legal_name || config.user.legal_name.trim() === '') delete config.user.legal_name;
+        if (!config.user.email_address || config.user.email_address.trim() === '') delete config.user.email_address;
+        if (!config.user.address.street || config.user.address.street.trim() === '') delete config.user.address.street;
+        if (!config.user.address.street2 || config.user.address.street2.trim() === '') delete config.user.address.street2;
+        if (!config.user.address.city || config.user.address.city.trim() === '') delete config.user.address.city;
+        if (!config.user.address.region || config.user.address.region.trim() === '') delete config.user.address.region;
+        if (!config.user.address.postal_code || config.user.address.postal_code.trim() === '') delete config.user.address.postal_code;
+        if (!config.user.address.country || config.user.address.country.trim() === '') delete config.user.address.country;
+        if (config.user && Object.keys(config.user).length === 0 && config.user.constructor === Object) delete config.user;
 
         return config;
     }
@@ -491,12 +570,20 @@ class LinkTokenConfig {
             const finalConfig = this.getFinalConfig();
 
             // Validate configuration
+            if (!finalConfig.client_name || finalConfig.client_name.trim() === '') {
+                throw new Error('Client name is required');
+            }
+
             if (!finalConfig.products || finalConfig.products.length === 0) {
                 throw new Error('At least one product must be selected');
             }
 
             if (!finalConfig.country_codes || finalConfig.country_codes.length === 0) {
                 throw new Error('At least one country code must be selected');
+            }
+
+            if (!finalConfig.user || !finalConfig.user.client_user_id) {
+                throw new Error('Client user ID is required');
             }
 
             // Save to localStorage with consistent keys
@@ -557,8 +644,16 @@ class LinkTokenConfig {
             document.getElementById('clientName').value = this.config.client_name;
             document.getElementById('linkCustomizationName').value = this.config.link_customization_name || '';
             document.getElementById('language').value = this.config.language;
-            document.getElementById('clientUserId').value = this.config.user.client_user_id || 'test-kit-user-' + Date.now();
+            document.getElementById('clientUserId').value = this.config.user.client_user_id;
             document.getElementById('userPhoneNumber').value = this.config.user.phone_number || '';
+            document.getElementById('userLegalName').value = this.config.user.legal_name || '';
+            document.getElementById('userEmailAddress').value = this.config.user.email_address || '';
+            document.getElementById('userAddressStreet').value = this.config.user.address.street || '';
+            document.getElementById('userAddressStreet2').value = this.config.user.address.street2 || '';
+            document.getElementById('userAddressCity').value = this.config.user.address.city || '';
+            document.getElementById('userAddressRegion').value = this.config.user.address.region || '';
+            document.getElementById('userAddressPostalCode').value = this.config.user.address.postal_code || '';
+            document.getElementById('userAddressCountry').value = this.config.user.address.country || '';
 
             // Reset country checkboxes
             document.querySelectorAll('.country-checkbox').forEach(cb => {
@@ -573,6 +668,8 @@ class LinkTokenConfig {
 
             UIUtils.showStatus('configStatus', 'Configuration reset to defaults', 'info');
             UIUtils.showNotification('Configuration reset to defaults (both local and server)', 'info');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
         } catch (error) {
             UIUtils.showNotification(`Failed to reset configuration: ${error.message}`, 'error');
         }
@@ -672,7 +769,6 @@ function setupAutoResize() {
 
     // Backup: try again when window fully loads
     window.addEventListener('load', function () {
-        console.log('Window load event fired');
         initializeAutoResize();
     });
 
@@ -681,7 +777,7 @@ function setupAutoResize() {
     const maxRetries = 20; // Try for up to 2 seconds
     const retryInterval = setInterval(() => {
         retryCount++;
-        console.log(`Retry attempt ${retryCount}/${maxRetries}`);
+        console.log(`Trying to auto-resize JSON code preview, attempt ${retryCount}/${maxRetries}`);
 
         if (initializeAutoResize() || retryCount >= maxRetries) {
             clearInterval(retryInterval);
@@ -749,25 +845,23 @@ function handleKeyup(event) {
     autoResizeTextarea(event.target);
 }
 
+function fillRandomUserId() {
+    const input = document.getElementById('clientUserId');
+    if (window.UIUtils && typeof window.UIUtils.generateRandomUsername === 'function') {
+        input.value = window.UIUtils.generateRandomUsername();
+    } else {
+        input.value = 'user_' + Math.floor(Math.random() * 1000000); // fallback
+    }
+}
+
 setupAutoResize();
 setupToggle();
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.linkTokenConfig = new LinkTokenConfig();
-
-    // Add keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-        // Ctrl+S to save/apply
-        if (e.ctrlKey && e.key === 's') {
-            e.preventDefault();
-            document.getElementById('applyConfig').click();
-        }
-
-        // Ctrl+R to reset
-        if (e.ctrlKey && e.key === 'r') {
-            e.preventDefault();
-            document.getElementById('resetConfig').click();
-        }
-    });
+    document.getElementById('clientUserId').value = window.linkTokenConfig.config.user.client_user_id;
+    document.getElementById('clientName').value = window.linkTokenConfig.config.client_name;
+    document.getElementById('language').value = window.linkTokenConfig.config.language;
+    document.getElementById('countryCodesInput').value = window.linkTokenConfig.config.country_codes.join(', ');
 });

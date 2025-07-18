@@ -13,6 +13,9 @@ class StartPage {
 
         // Check if we're returning from a hosted link session
         this.checkHostedLinkCompletion();
+
+        // Check for custom configuration
+        await this.checkCustomConfiguration();
     }
 
     checkHostedLinkCompletion() {
@@ -187,43 +190,40 @@ class StartPage {
         // Check for localStorage configurations first
         const storedConfig = this.getStoredConfiguration();
         const displayConfig = storedConfig || this.customConfig;
+        const formattedConfig = UIUtils.syntaxHighlight(displayConfig);
 
         if (displayConfig) {
             const productsList = displayConfig.products ? displayConfig.products.join(', ') : 'none';
             const countriesList = displayConfig.country_codes ? displayConfig.country_codes.join(', ') : 'none';
             const configSource = storedConfig ? 'Local Storage' : 'Server';
             const configName = storedConfig ? this.getStoredConfigurationName() : 'Custom Server Config';
+            const clientName = displayConfig.client_name || 'Plaid Test Kit';
+            const language = displayConfig.language || 'en';
+            const clientUserId = displayConfig.user ? displayConfig.user.client_user_id || 'N/A' : 'N/A';
 
             // NEW: Handle additional consented products display
             const additionalConsentedProducts = displayConfig.additional_consented_products;
             const hasAdditionalConsented = additionalConsentedProducts && additionalConsentedProducts.length > 0;
             const additionalConsentedList = hasAdditionalConsented ? additionalConsentedProducts.join(', ') : '';
 
-            statusEl.innerHTML = `
-                <div style="padding: 12px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 8px; border-left: 3px solid #10b981;">
-                    <div style="font-size: 13px; color: #047857;">
-                        <div style="margin-bottom: 8px;"><strong>Configuration:</strong> ${configName}</div>
-                        <div style="margin-bottom: 4px;"><strong>Source:</strong> ${configSource}</div>
-                        <div style="margin-bottom: 4px;"><strong>Products:</strong> ${productsList}</div>
-                        ${hasAdditionalConsented ? `<div style="margin-bottom: 4px;"><strong>Additional Consented:</strong> ${additionalConsentedList}</div>` : ''}
-                        <div style="margin-bottom: 4px;"><strong>Countries:</strong> ${countriesList}</div>
-                        <div><strong>Client:</strong> ${displayConfig.client_name || 'Plaid Test Kit'}</div>
-                    </div>
-                </div>
-            `;
+            statusEl.innerHTML = `<div class="json-block json-editor">${formattedConfig}</div>`;
+
         } else {
             // Default configuration display
-            statusEl.innerHTML = `
-                <div style="padding: 12px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 8px; border-left: 3px solid #10b981;">
-                    <div style="font-size: 13px; color: #047857;">
-                        <div style="margin-bottom: 8px;"><strong>Configuration:</strong> Default</div>
-                        <div style="margin-bottom: 4px;"><strong>Source:</strong> Built-in</div>
-                        <div style="margin-bottom: 4px;"><strong>Products:</strong> auth</div>
-                        <div style="margin-bottom: 4px;"><strong>Countries:</strong> US</div>
-                        <div><strong>Client:</strong> Plaid Test Kit</div>
-                    </div>
-                </div>
-            `;
+            statusEl.innerHTML = `<div class="json-editor json-block">
+{
+    <span class="key">"products"</span>: [
+    <span class="string">"auth"</span>
+    ],
+    <span class="key">"client_name"</span>: <span class="string">"Plaid Test Kit"</span>,
+    <span class="key">"country_codes"</span>: [
+    <span class="string">"US"</span>
+    ],
+    <span class="key">"language"</span>: <span class="string">"en"</span>,
+    <span class="key">"user"</span>: {
+    <span class="key">"client_user_id"</span>: <span class="string">"clever_fox_24"</span>
+    }
+}</div>`;
         }
     }
 

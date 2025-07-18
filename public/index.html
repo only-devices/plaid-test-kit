@@ -31,47 +31,13 @@
 
     <!-- Link Configuration Section -->
     <div class="card">
-        <h2>1️⃣ Link Configuration</h2>
-        <p>Customize your Link token creation with advanced configuration options including products, country codes, and
-            advanced parameters.</p>
-
-        <div class="grid grid-2">
-            <div class="feature-card" onclick="window.location.href='/link-config.html'">
-                <h3>⚙️ Configure Link Token</h3>
-                <p>Customize products, country codes, and advanced Link token parameters.</p>
-                <div style="margin: 16px 0;">
-                    <h4 style="font-size: 16px; margin-bottom: 12px;">⚡️ Quick Configs</h4>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
-                        <button class="btn btn-outline btn-small"
-                            onclick="event.stopPropagation(); loadPresetConfig('auth')"
-                            style="padding: 8px 16px; font-size: 14px;">Auth</button>
-                        <button class="btn btn-outline btn-small"
-                            onclick="event.stopPropagation(); loadPresetConfig('transactions')"
-                            style="padding: 8px 16px; font-size: 14px;">Transactions</button>
-                        <button class="btn btn-outline btn-small"
-                            onclick="event.stopPropagation(); loadPresetConfig('identity')"
-                            style="padding: 8px 16px; font-size: 14px;">Identity</button>
-                        <button class="btn btn-outline btn-small"
-                            onclick="event.stopPropagation(); loadPresetConfig('ABI')"
-                            style="padding: 8px 16px; font-size: 14px;">ABI</button>
-                    </div>
-                </div>
-                <button class="btn btn-primary btn-full">Open Configurator</button>
-            </div>
-
-            <div style="padding: 24px;">
-                <h4>Current Configuration</h4>
-                <div id="configStatus" style="margin: 16px 0;">
-                    <div
-                        style="padding: 12px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 8px; border-left: 3px solid #10b981;">
-                        <div style="font-size: 13px; color: #047857;">
-                            <div><strong>Products:</strong> auth</div>
-                            <div><strong>Countries:</strong> US</div>
-                            <div><strong>Client:</strong> Plaid Test Kit - Auth</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <h2>1️⃣ Link Token Configuration</h2>
+        <p>Customize your Link token creation with advanced configuration options including products, country codes, and advanced parameters.</p>
+        <div class="config-section">
+            <h3>⚙️ Current Configuration</h3>
+            <!-- #configStatus below is dynamically updated by start-page.js on page load -->
+            <div id="configStatus"></div>
+            <button class="btn btn-primary" style="margin-top: 16px;" onclick="window.location.href='/link-config.html'">Open Link Token Configurator</button>
         </div>
     </div>
 

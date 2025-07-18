@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plaid Test Kit - Link Token Configuration</title>
     <link rel="stylesheet" href="/css/styles.css">
 </head>
+
 <body>
     <!-- Status Display -->
     <div id="configStatus"></div>
@@ -14,101 +16,97 @@
     <div class="config-section">
         <div class="config-header">
             <div>
-                <h3 style="margin: 0; color: #1e293b;">Basic Configuration</h3>
-                <p class="section-description" style="margin: 4px 0 0 0;">Configure basic Link token parameters like country codes, language, and client information.</p>
+                <h3 style="margin: 0; color: #1e293b;">🧱 Basic Configuration</h3>
             </div>
         </div>
 
         <div class="form-row">
             <div>
-                <label>Link Customization Name</label>
-                <input type="text" id="linkCustomizationName" placeholder="e.g. default, custom_theme" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
-                <div class="help-text">The name of the Link customization to use (optional). Must match a customization created in your Plaid Dashboard.</div>
+                <label for="linkCustomizationName">Link Customization Name</label>
+                <input type="text" id="linkCustomizationName" placeholder="e.g. default, custom_theme"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">The name of the <a href="https://plaid.com/docs/link/customization/" class="link"
+                        target="_blank">Link customization</a> to use (optional). Must match a customization created in
+                    your Plaid Dashboard.</div>
             </div>
             <div>
-                <label>Client Name <span class="required-badge">Required</span></label>
-                <input type="text" id="clientName" value="Plaid Test Kit" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <label for="clientName">Client Name <span class="required-badge">Required</span></label>
+                <input type="text" id="clientName" value="Plaid Test Kit"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <div class="help-text">The name of your application as it will be displayed to users</div>
             </div>
             <div>
-                <label>Language <span class="required-badge">Required</span></label>
-                <input type="text" id="language" value="en" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <label for="language">Language <span class="required-badge">Required</span></label>
+                <input type="text" id="language" value="en"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <div class="help-text">
-                    The language that Link should be displayed in. See 
-                    <a href="https://plaid.com/docs/api/link/#link-token-create-request-language" class="link" target="_blank">
+                    The language that Link should be displayed in. See
+                    <a href="https://plaid.com/docs/api/link/#link-token-create-request-language" class="link"
+                        target="_blank">
                         supported languages
                     </a>
                 </div>
             </div>
             <div>
-            <label>Country Codes <span class="required-badge">Required</span></label>
-            <input type="text" id="countryCodesInput" value="US" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <div class="help-text">
-                Enter one or more country codes, separated by commas 
-                <a href="https://plaid.com/docs/api/link/#link-token-create-request-country-codes" class="link" target="_blank">Learn more</a>
+                <label for="countryCodesInput">Country Codes <span class="required-badge">Required</span></label>
+                <input type="text" id="countryCodesInput" value="US"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">
+                    Enter one or more country codes, separated by commas
+                    <a href="https://plaid.com/docs/api/link/#link-token-create-request-country-codes" class="link"
+                        target="_blank">Learn more</a>
+                </div>
             </div>
-        </div>
             <div>
-            <label>Webhook</label>
-            <input type="text" id="webhookUrl" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <div class="help-text">
-                The URL to which Plaid will send webhook lifecycle events.
+                <label for="webhookUrl">Webhook</label>
+                <input type="text" id="webhookUrl"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">
+                    The URL to which Plaid will send webhook lifecycle events.
+                </div>
             </div>
+            <!-- End Basic Configuration -->
         </div>
-        </div>
-    </div>
-
-    <!-- User Configuration -->
-    <div class="config-section">
-        <div class="config-header">
+        <!-- User Configuration -->
+        <div class="config-header" style="margin-top: 16px;">
             <div>
-                <h3 style="margin: 0; color: #1e293b;">User Configuration</h3>
-                <p class="section-description" style="margin: 4px 0 0 0;">Configure user-specific details such as client user ID and phone number.</p>
+                <h3 style="margin: 0; color: #1e293b;">🥸 User Configuration</h3>
             </div>
         </div>
 
         <div class="form-row">
             <div>
-                <label>Client User ID <span class="required-badge">Required</span></label>
-                <input type="text" id="clientUserId" placeholder="username864" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <label for="clientUserId">Client User ID <span class="required-badge">Required</span></label>
+                <input type="text" id="clientUserId" placeholder=""
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <div class="help-text">A customer-generated unique identifier for the end user</div>
+                <button type="button" class="btn btn-secondary" style="margin-top:8px;"
+                    onclick="fillRandomUserId()">Generate Random User ID</button>
             </div>
             <div>
-                <label>Phone Number</label>
-                <input type="text" id="userPhoneNumber" placeholder="+1 415-555-0010" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <label for="userPhoneNumber">Phone Number</label>
+                <input type="text" id="userPhoneNumber" placeholder="+1 415-555-0010"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <div class="help-text">
-                    The phone number of the user. Different phone numbers in Sandbox will lead to 
-                    <a href="https://plaid.com/docs/link/returning-user/#testing-in-sandbox" class="link" target="_blank">
+                    The phone number of the user. Different phone numbers in Sandbox will lead to
+                    <a href="https://plaid.com/docs/link/returning-user/#testing-in-sandbox" class="link"
+                        target="_blank">
                         different returning user experiences
                     </a>
                 </div>
             </div>
         </div>
+        <!-- User Configuration End -->
     </div>
 
     <!-- Products Configuration -->
     <div class="config-section">
-        <div class="config-header">
-            <div>
-                <h3 style="margin: 0; color: #1e293b;">Products Configuration</h3>
-                <p class="section-description" style="margin: 4px 0 0 0;">Select which Plaid products to include in your Link token. Products marked as required will always be requested, while optional products may be skipped if not supported.</p>
-            </div>
+        <div>
+            <h3 style="margin: 0; color: #1e293b;">💈 Products Configuration</h3>
+            <p class="section-description help-text" style="margin: 4px 0 0 0;">Select which Plaid products to include
+                in your Link token. Products marked as required will always be requested, while optional products may be
+                skipped if not supported.</p>
         </div>
-
-        <!-- Column explanation -->
-        <div class="column-help">
-            <h4>Column Explanations (Products can only be in ONE category):</h4>
-            <ul>
-                <li><strong>Include:</strong> Products in the main <code>products</code> array - these are the primary products your app requests</li>
-                <li><strong>Optional:</strong> Products in <code>optional_products</code> - requested if supported by the institution</li>
-                <li><strong>Required if Supported:</strong> Products in <code>required_if_supported_products</code> - required if the institution supports them</li>
-                <li><strong>Additional Consented:</strong> Products in <code>additional_consented_products</code> - products the user has consented to but may not be actively requested</li>
-            </ul>
-            <p style="margin: 8px 0 0 0; font-weight: 500; color: #dc2626;">
-                ⚠️ Each product can only be selected in one column. Selecting a different column for the same product will automatically uncheck the others.
-            </p>
-        </div>
-
         <div style="overflow-x: auto;">
             <table class="products-table">
                 <thead>
@@ -126,42 +124,114 @@
             </table>
         </div>
     </div>
+    <!-- Products Configuration End -->
 
-        <!-- Advanced JSON Configuration -->
-<div class="config-section">
-    <div class="config-header">
-        <div>
-            <h3 style="margin: 0; color: #1e293b;">Advanced Configuration</h3>
-            <p class="section-description" style="margin: 4px 0 0 0;">Enable manual Link token configuration using JSON by using the toggle to the right. This will override the basic configuration above.</p>
+    <!-- Identity Configuration -->
+    <div class="config-section">
+        <div class="config-header">
+            <div>
+                <h3 style="margin: 0; color: #1e293b;">🫆 Identity Configuration</h3>
+                <p class="section-description help-text" style="margin: 4px 0 0 0;">These items are only used when
+                    calling /identity/match during /link/token/create. <a
+                        href="https://plaid.com/docs/identity/#integrating-identity-match-via-the-account-verification-dashboard"
+                        class="link">See more details.</a></p>
+
+            </div>
         </div>
-        <div class="config-toggle">
-            <div class="toggle-switch" id="advancedToggle"></div>
+
+        <div class="form-row">
+            <div>
+                <label for="userLegalName">Legal Name</label>
+                <input type="text" id="userLegalName" placeholder="Donna Clark"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">The legal name of the user</div>
+            </div>
+            <div>
+                <label for="userEmailAddress">Email Address</label>
+                <input type="email" id="userEmailAddress" placeholder="donna@mutiny.com"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">The email address of the user</div>
+            </div>
+            <div>
+                <label for="userAddressStreet">Address Street</label>
+                <input type="text" id="userAddressStreet" placeholder="1 Mutiny Way"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">The street address of the user</div>
+            </div>
+            <div>
+                <label for="userAddressStreet2">Address Street 2</label>
+                <input type="text" id="userAddressStreet2" placeholder=""
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">The second line of the user's street address (optional)</div>
+            </div>
+            <div>
+                <label for="userAddressCity">Address City</label>
+                <input type="text" id="userAddressCity" placeholder="Austin"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">The city of the user's address</div>
+            </div>
+            <div>
+                <label for="userAddressRegion">Address Region</label>
+                <input type="text" id="userAddressRegion" placeholder="TX"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">The region (state or province) of the user's address</div>
+            </div>
+            <div>
+                <label for="userAddressPostalCode">Address Postal Code</label>
+                <input type="text" id="userAddressPostalCode" placeholder="78703"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">The postal code of the user's address</div>
+            </div>
+            <div>
+                <label for="userAddressCountry">Address Country</label>
+                <input type="text" id="userAddressCountry" placeholder="US"
+                    style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="help-text">The country of the user's address (e.g. US, CA)</div>
+            </div>
         </div>
     </div>
+    <!-- Identity Configuration End -->
 
-    <div id="advancedSection" class="disabled-section">
-        <div class="form-group">
-            <label>Link Token Create (JSON)</label>
-            <textarea 
-                id="jsonConfig" 
-                class="json-editor json-block"></textarea>
+    <!-- Advanced JSON Configuration -->
+    <div class="config-section">
+        <div class="config-header">
+            <div>
+                <h3 style="margin: 0; color: #1e293b;">🥽 Advanced Configuration</h3>
+                <p class="section-description" style="margin: 4px 0 0 0;">Enable manual Link token configuration using
+                    JSON by using the toggle to the right. This will override the basic configuration above.</p>
+            </div>
+            <div class="config-toggle">
+                <div class="toggle-switch" id="advancedToggle"></div>
+            </div>
         </div>
+
+        <div id="advancedSection" class="disabled-section">
+            <div class="form-group">
+                <label>Link Token Create (JSON)</label>
+                <textarea id="jsonConfig" class="json-editor json-block"></textarea>
+            </div>
         </div>
         <div id="jsonStatus" class="json-status json-valid">JSON is valid</div>
         <div class="help-text">
-            Add any additional Link token parameters as JSON. See <a href="https://plaid.com/docs/api/link/#linktokencreate" target="_blank" style="color: #6366f1;">Plaid documentation</a> for all available options.
+            Add any additional Link token parameters as JSON. See <a
+                href="https://plaid.com/docs/api/link/#linktokencreate" target="_blank" style="color: #6366f1;">Plaid
+                documentation</a> for all available options.
         </div>
     </div>
+    <!-- Advanced JSON Configuration End -->
 
     <!-- Action Buttons -->
     <div style="display: flex; gap: 16px; justify-content: center; margin-top: 24px;">
-        <button id="applyConfig" class="btn btn-primary btn-large">
+        <button id="backToStart" class="btn btn-primary btn-large">
+            Back to Start Page
+        </button>
+        <button id="applyConfig" class="btn btn-secondary btn-large">
             Apply Configuration
         </button>
-        <button id="resetConfig" class="btn btn-secondary btn-large">
+        <button id="resetConfig" class="btn btn-primary btn-large">
             Reset to Defaults
         </button>
-        <button id="savePreset" class="btn btn-success btn-large">
+        <button id="savePreset" class="btn btn-secondary btn-large">
             Save as Preset
         </button>
     </div>
@@ -171,4 +241,5 @@
     <script src="/js/ui-utils.js"></script>
     <script src="/js/link-config.js"></script>
 </body>
+
 </html>
