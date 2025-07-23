@@ -32,18 +32,51 @@ A comprehensive test kit for Plaid's Link experiences and API endpoints in sandb
 
 ```
 plaid-test-kit/
-├── app.js
+├── app.js                        # Main application entry point
 ├── package.json
 ├── .env.example
 ├── .env
 ├── README.md
-└── public/
+├── sessions/                     # Session storage directory
+├── src/                          # Server-side application code
+│   ├── config/                   # Configuration modules
+│   │   ├── environment.js
+│   │   ├── plaid.js
+│   │   └── session.js
+│   ├── middleware/               # Express middleware
+│   │   ├── auth.js
+│   │   └── rateLimiter.js
+│   ├── routes/                   # API and page routes
+│   │   ├── api/
+│   │   │   ├── auth-v2.js
+│   │   │   ├── plaid-v2.js
+│   │   │   └── webhooks-v2.js
+│   │   ├── health.js
+│   │   └── pages.js
+│   ├── services/                 # Business logic services
+│   │   ├── authService.js
+│   │   ├── errorService.js
+│   │   ├── plaidService.js
+│   │   └── webhookService.js
+│   ├── storage/                  # Data storage utilities
+│   │   └── itemStore.js
+│   └── utils/                    # Utility modules
+│       ├── crypto.js
+│       ├── errors.js      
+│       ├── logger.js
+│       ├── navbar.js
+│       ├── response.js
+│       └── validation.js
+└── public/                       # Client-side files
     ├── index.html
     ├── identity-tester.html
     ├── auth-tester.html
     ├── balance-tester.html
     ├── link-config.html
     ├── webhooks.html
+    ├── assets/                   # Static assets
+    │   ├── plaid-bw.png
+    │   └── symbol-holo.png
     ├── css/
     │   └── styles.css
     └── js/
