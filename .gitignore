@@ -140,3 +140,6 @@ dist
 
 # sessions directory
 sessions/
+
+# Claude
+.claude
