@@ -8,6 +8,7 @@ A comprehensive test kit for Plaid's Link experiences and API endpoints in sandb
 - **Standard Link**: Classic modal experience with full OAuth support
 - **Embedded Link**: Modern embedded experience with seamless page integration
 - **Hosted Link**: Opens Plaid-hosted Link session and then returns to app once complete with access token
+- **Layer Support**: Phone-based authentication using Plaid Layer for eligible users
 - **Update Mode**: Add additional accounts to existing connections using account selection
 
 ### API Testing Modules
@@ -15,6 +16,7 @@ A comprehensive test kit for Plaid's Link experiences and API endpoints in sandb
 - **Identity APIs**: Test both `/identity/get` and `/identity/match` simultaneously. View match scores, compare input vs. retrieved data, and see raw API responses.
 - **Auth API**: Test the `/auth/get` endpoint to retrieve account and routing numbers for selected accounts. View ACH, routing, and wire routing numbers, as well as account type and subtype.
 - **Balance API**: Test the `/accounts/balance/get` endpoint to retrieve real-time balance information for selected accounts. See available, current, and credit limit balances, currency codes, and last updated timestamps.
+- **Webhooks**: Real-time webhook monitoring with filtering, search, statistics, and export capabilities. View and analyze webhook events as they arrive.
 - **Account Selection**: For all modules, select specific accounts from connected institutions to test API responses on a per-account basis.
 - **Real-time Results**: All modules display results instantly, including formatted and raw JSON responses for easy debugging.
 - **Copy-to-Clipboard**: Easily copy raw API responses for any test with a single click.
@@ -41,6 +43,7 @@ plaid-test-kit/
     ├── auth-tester.html
     ├── balance-tester.html
     ├── link-config.html
+    ├── webhooks.html
     ├── css/
     │   └── styles.css
     └── js/
@@ -49,17 +52,21 @@ plaid-test-kit/
         ├── auth-tester.js
         ├── balance-tester.js
         ├── identity-tester.js
+        ├── layer-manager.js
         ├── link-config.js
         ├── plaid-link.js
         ├── start-page.js
-        └── ui-utils.js
+        ├── ui-utils.js
+        └── webhooks.js
 ```
 
 ## Features
 
-- **Multiple Link Experiences:** Standard, Embedded, Update Mode
-- **API Testing:** Identity, Auth, and Balance endpoints
+- **Multiple Link Experiences:** Standard, Embedded, Layer, Update Mode
+- **API Testing:** Identity, Auth, Balance endpoints, and Webhooks
 - **OAuth Support:** Automatic detection and redirect handling
+- **Layer Support:** Phone-based authentication for eligible users
+- **Webhook Monitoring:** Real-time webhook capture with filtering and export
 - **Session Management:** In-memory for dev, file-based for production
 - **Copy-to-Clipboard:** Easily copy tokens and URLs
 - **Modular Architecture:** Separate JS modules for each tester
@@ -98,7 +105,13 @@ For OAuth testing:
 - Add `http://${HOST}:${PORT}/oauth-redirect` (where HOST and PORT are defined in the .env file for the project) to "Allowed OAuth redirect URIs" -- if these variables aren't set, the defaults of HOST=localhost and PORT=3000 are used
 - Save changes
 
-### 4. Start the Server
+### 4. Configure Webhooks (Optional)
+For webhook testing:
+- Use the webhook URL displayed in the app: `http://${HOST}:${PORT}/webhooks`
+- Add this URL as the webhook parameter when creating Link tokens
+- **Note**: Only webhooks for items linked through this Test Kit will be displayed
+
+### 5. Start the Server
 ```bash
 npm start
 ```
@@ -108,7 +121,7 @@ Or for development with auto-restart:
 npm run dev
 ```
 
-### 5. Open Your Browser
+### 6. Open Your Browser
 Navigate to `http://localhost:3000`
 
 ## Usage Guide
@@ -125,11 +138,17 @@ Navigate to `http://localhost:3000`
 |--------|----------|-------------|
 | `GET` | `/` | Start page with Link options |
 | `GET` | `/identity-tester.html` | Identity API testing interface |
+| `GET` | `/webhooks.html` | Webhook monitoring interface |
 | `POST` | `/api/create-link-token` | Create Link token (supports update mode) |
 | `POST` | `/api/exchange-token` | Exchange public_token for access_token |
 | `POST` | `/api/set-token` | Set access_token directly |
 | `POST` | `/api/get-accounts` | Get available accounts |
 | `POST` | `/api/test-identity` | Test Identity endpoints |
+| `POST` | `/api/session/token/create` | Create Layer session token |
+| `POST` | `/api/user_account/session/get` | Get Layer session results |
+| `GET` | `/api/webhooks` | Get webhook history |
+| `POST` | `/api/webhooks/clear` | Clear webhook logs |
+| `POST` | `/webhooks` | Webhook endpoint for Plaid events |
 | `POST` | `/api/logout` | Clears session |
 | `GET` | `/oauth-redirect` | Handle OAuth redirects |
 | `GET` | `/health` | Public health check and server status |
@@ -149,13 +168,28 @@ Navigate to `http://localhost:3000`
 - **Real-time Status**: Live updates on Link events and status
 - **Responsive Design**: Works seamlessly on all screen sizes
 
+### Layer Support
+- **Phone-based Authentication**: Users can authenticate using their phone number
+- **Eligibility Detection**: Automatic detection of Layer availability for phone numbers
+- **Real-time Events**: Live monitoring of Layer session events (LAYER_READY, LAYER_NOT_AVAILABLE)
+- **Session Management**: Complete Layer session lifecycle management
+
+### Webhook Monitoring
+- **Real-time Capture**: Webhook events displayed instantly as they arrive
+- **Filtering & Search**: Filter by event type and search webhook content
+- **Statistics Dashboard**: View total webhooks, unique types, and hourly activity
+- **Export Functionality**: Export webhook logs as JSON for analysis
+- **Visual Interface**: Clean, terminal-style display with syntax highlighting
+
 ## Modular Architecture
 
 ### Shared Modules
 
 - **API Client**: Centralized API communication with error handling
 - **Plaid Link Manager**: Unified Link management for all modes
-- **Plaid Account Manager**: Passes account details between different testing modules
+- **Layer Manager**: Complete Layer session management and phone number handling
+- **Webhooks Manager**: Real-time webhook monitoring and filtering
+- **Account Manager**: Passes account details between different testing modules
 - **UI Utils**: Reusable UI utilities and status management
 
 ### Benefits
