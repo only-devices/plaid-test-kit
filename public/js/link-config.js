@@ -8,11 +8,6 @@ const PLAID_PRODUCTS = [
         description: 'Access to account and routing numbers for ACH'
     },
     {
-        id: 'balance',
-        name: 'Balance',
-        description: 'Access to account balances'
-    },
-    {
         id: 'identity',
         name: 'Identity',
         description: 'Access to identity information like names, emails, phone numbers, and addresses'

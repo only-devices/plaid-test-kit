@@ -288,7 +288,9 @@ class StartPage {
             });
 
             if (!tokenResponse.success) {
+                window.plaidLinkManager.destroy();
                 throw new Error(tokenResponse.error);
+                
             }
 
             UIUtils.showStatus('globalStatus', 'Opening Plaid Link...', 'info');
@@ -329,6 +331,7 @@ class StartPage {
             });
 
             if (!tokenResponse.success) {
+                window.plaidLinkManager.destroy();
                 throw new Error(tokenResponse.error);
             }
 
@@ -415,6 +418,7 @@ class StartPage {
             });
 
             if (!tokenResponse.success) {
+                window.plaidLinkManager.destroy();
                 throw new Error(tokenResponse.error);
             }
 

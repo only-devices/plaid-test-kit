@@ -154,8 +154,8 @@ class PlaidLinkManager {
         const tokenRequest = {};
         
         // Include custom configuration if provided
-        if (custom_config) {
-            tokenRequest.custom_config = custom_config;
+        if (custom_config && typeof custom_config === 'object') {
+            Object.assign(tokenRequest, custom_config);
         }
         
         // For hosted mode, include hosted_link object
