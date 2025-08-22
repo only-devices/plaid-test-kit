@@ -193,21 +193,8 @@ class StartPage {
         const formattedConfig = UIUtils.syntaxHighlight(displayConfig);
 
         if (displayConfig) {
-            const productsList = displayConfig.products ? displayConfig.products.join(', ') : 'none';
-            const countriesList = displayConfig.country_codes ? displayConfig.country_codes.join(', ') : 'none';
-            const configSource = storedConfig ? 'Local Storage' : 'Server';
-            const configName = storedConfig ? this.getStoredConfigurationName() : 'Custom Server Config';
-            const clientName = displayConfig.client_name || 'Plaid Test Kit';
-            const language = displayConfig.language || 'en';
-            const clientUserId = displayConfig.user ? displayConfig.user.client_user_id || 'N/A' : 'N/A';
-
-            // NEW: Handle additional consented products display
-            const additionalConsentedProducts = displayConfig.additional_consented_products;
-            const hasAdditionalConsented = additionalConsentedProducts && additionalConsentedProducts.length > 0;
-            const additionalConsentedList = hasAdditionalConsented ? additionalConsentedProducts.join(', ') : '';
-
             statusEl.innerHTML = `<div class="json-block json-editor">${formattedConfig}</div>`;
-
+            
         } else {
             // Default configuration display
             statusEl.innerHTML = `<div class="json-editor json-block">

@@ -76,15 +76,7 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   logger.success(`Plaid Test Kit (Service-Based) running on ${BASE_URL}`, {
     port: PORT,
-    environment: process.env.NODE_ENV || 'development',
-    features: [
-      'Service-based architecture',
-      'Enhanced error handling',
-      'Comprehensive logging',
-      'Request validation',
-      'Webhook management',
-      'Authentication service'
-    ]
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 

@@ -54,6 +54,9 @@ class LinkTokenConfig {
             link_customization_name: '',
             country_codes: ['US'],
             language: 'en',
+            institution_data: {
+                routing_number: ''
+            },
             user: {
                 client_user_id: window.UIUtils.generateRandomUsername(),
                 legal_name: '',
@@ -125,6 +128,7 @@ class LinkTokenConfig {
             clientName: ['client_name'],
             linkCustomizationName: ['link_customization_name'],
             language: ['language'],
+            routingNumber: ['institution_data', 'routing_number'],
             clientUserId: ['user', 'client_user_id'],
             phoneNumber: ['user', 'phone_number'],
             legalName: ['user', 'legal_name'],
@@ -223,6 +227,10 @@ class LinkTokenConfig {
 
         document.getElementById('language').addEventListener('change', () => {
             this.config.language = document.getElementById('language').value;
+        });
+
+        document.getElementById('routingNumber').addEventListener('input', () => {
+            this.config.institution_data.routing_number = document.getElementById('routingNumber').value;
         });
 
         document.getElementById('countryCodesInput').addEventListener('input', () => {
@@ -639,6 +647,7 @@ class LinkTokenConfig {
             document.getElementById('clientName').value = this.config.client_name;
             document.getElementById('linkCustomizationName').value = this.config.link_customization_name || '';
             document.getElementById('language').value = this.config.language;
+            document.getElementById('routingNumber').value = this.config.institution_data.routing_number || '';
             document.getElementById('clientUserId').value = this.config.user.client_user_id;
             document.getElementById('userPhoneNumber').value = this.config.user.phone_number || '';
             document.getElementById('userLegalName').value = this.config.user.legal_name || '';
