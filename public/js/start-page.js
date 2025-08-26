@@ -784,8 +784,6 @@ class StartPage {
     }
 
     handleLinkEvent(eventName, metadata) {
-        console.log('Link event:', { eventName, metadata, mode: this.currentMode });
-
         // Handle specific events for user feedback
         if (eventName === 'SEARCH_INSTITUTION') {
             const message = 'Institution search performed...';

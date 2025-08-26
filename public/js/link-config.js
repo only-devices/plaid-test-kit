@@ -549,6 +549,8 @@ class LinkTokenConfig {
         if (!config.user.address.region || config.user.address.region.trim() === '') delete config.user.address.region;
         if (!config.user.address.postal_code || config.user.address.postal_code.trim() === '') delete config.user.address.postal_code;
         if (!config.user.address.country || config.user.address.country.trim() === '') delete config.user.address.country;
+        // Delete the entire institution_data object if routing_number is empty
+        if (!config.institution_data.routing_number || config.institution_data.routing_number.trim() === '') delete config.institution_data;
         if (config.user && Object.keys(config.user).length === 0 && config.user.constructor === Object) delete config.user;
 
         return config;
